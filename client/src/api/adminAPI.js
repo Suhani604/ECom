@@ -1,0 +1,15 @@
+import api from './axiosInstance.js'
+
+export const getAdminDashboardAPI    = ()             => api.get('/admin/dashboard')
+export const getAllSellersAPI         = (params = {})  => api.get('/admin/sellers', { params })
+export const getSellerByIdAPI         = (id)           => api.get(`/admin/sellers/${id}`)
+export const approveSellerAPI         = (id)           => api.put(`/admin/sellers/${id}/approve`)
+export const rejectSellerAPI          = (id, reason)   => api.put(`/admin/sellers/${id}/reject`, { reason })
+export const suspendSellerAPI         = (id)           => api.put(`/admin/sellers/${id}/suspend`)
+export const getAllProductsAdminAPI   = (params = {})  => api.get('/admin/products', { params })
+export const approveProductAPI        = (id)           => api.put(`/admin/products/${id}/approve`)
+export const rejectProductAPI         = (id, reason)   => api.put(`/admin/products/${id}/reject`, { reason })
+export const getAllBuyersAPI           = (params = {})  => api.get('/admin/buyers', { params })
+export const toggleBlockAPI           = (id)           => api.put(`/admin/users/${id}/block`)
+export const getAllOrdersAdminAPI      = (params = {})  => api.get('/admin/orders', { params })
+// export const getAllOrdersAdminAPI = (params) => api.get('/admin/orders', { params })
