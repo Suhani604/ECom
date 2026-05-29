@@ -352,17 +352,8 @@ export const adminGetProducts = async (req, res) => {
   const filter = {}
   if (status) filter.status = status
 
-  const [products, total] = await Promise.all([
-    Product.find(filter)
-      .populate('seller',      'name email')
-      .populate('category',    'name')
-      .populate('itemType',    'name')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    Product.countDocuments(filter),
-  ])
-
+Product.find(filter)
+  .populate('seller', 'name sellerDetails.businessName')
   return paginatedResponse(res, 'Products fetched', products, page, limit, total)
 }
 
