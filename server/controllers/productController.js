@@ -151,9 +151,16 @@ export const createProduct = async (req, res) => {
 
     const imageUrls = []
     for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: 'voguecart/products',
-      })
+      // ✅ NAYA — buffer se direct Cloudinary upload
+const result = await new Promise((resolve, reject) => {
+  cloudinary.uploader.upload_stream(
+    { folder: 'voguecart/products' },
+    (error, result) => {
+      if (error) reject(error)
+      else resolve(result)
+    }
+  ).end(file.buffer)
+})
       imageUrls.push(result.secure_url)
     }
 
@@ -244,9 +251,15 @@ export const updateProduct = async (req, res) => {
 
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: 'voguecart/products',
-        })
+        const result = await new Promise((resolve, reject) => {
+  cloudinary.uploader.upload_stream(
+    { folder: 'voguecart/products' },
+    (error, result) => {
+      if (error) reject(error)
+      else resolve(result)
+    }
+  ).end(file.buffer)
+})
         imageUrls.push(result.secure_url)
       }
     }
