@@ -17,7 +17,7 @@ export const getProducts = async (req, res) => {
   const search   = req.query.search          || null
   const skip     = (page - 1) * limit
 
-  const filter = { status: 'active' }
+  const filter = {}
 
   if (category) {
     const cat = await Category.findOne({
@@ -352,8 +352,17 @@ export const adminGetProducts = async (req, res) => {
   const filter = {}
   if (status) filter.status = status
 
-Product.find(filter)
-  .populate('seller', 'name sellerDetails.businessName')
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate('seller',      'name email')
+      .populate('category',    'name')
+      .populate('itemType',    'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Product.countDocuments(filter),
+  ])
+
   return paginatedResponse(res, 'Products fetched', products, page, limit, total)
 }
 
