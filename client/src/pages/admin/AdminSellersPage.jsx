@@ -28,7 +28,7 @@ export default function AdminSellersPage() {
   const [sideOpen,    setSideOpen]    = useState(false)
   const [sellers,     setSellers]     = useState([])
   const [loading,     setLoading]     = useState(true)
-  const [status,      setStatus]      = useState('pending')
+  const [status,      setStatus]      = useState('')
   const [search,      setSearch]      = useState('')
   const [page,        setPage]        = useState(1)
   const [total,       setTotal]       = useState(0)
@@ -92,13 +92,13 @@ export default function AdminSellersPage() {
         {/* Header */}
         <header style={{ background: 'white', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #EBEBF0', position: 'sticky', top: 0, zIndex: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => setSideOpen(true)} style={{ background: '#F9F9FB', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex' }} className="lg:hidden">☰</button>
+            <button onClick={() => setSideOpen(true)} style={{ background: '#F9F9FB', border: 'none', padding: '8px 10px', borderRadius: '0px', cursor: 'pointer', fontSize: '16px', display: 'flex' }} className="lg:hidden">☰</button>
             <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#1A1A2E', margin: 0, fontFamily: f }}>Sellers</h1>
-            <span style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: '600' }}>{total} total</span>
+            <span style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 12px', borderRadius: '000px', fontSize: '11px', fontWeight: '600' }}>{total} total</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <NotificationBell />
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700' }}>AD</div>
+            <div style={{ width: '36px', height: '36px', borderRadius: '0%', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700' }}>AD</div>
           </div>
         </header>
 
@@ -110,9 +110,9 @@ export default function AdminSellersPage() {
               <FiSearch style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#C0C0D0' }} size={15} />
               <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by name, email, business, GSTIN..."
-                style={{ width: '100%', padding: '10px 14px 10px 40px', border: '1px solid #EBEBF0', borderRadius: '12px', fontSize: '13px', outline: 'none', fontFamily: f, boxSizing: 'border-box', background: 'white' }} />
+                style={{ width: '100%', padding: '10px 14px 10px 40px', border: '1px solid #EBEBF0', borderRadius: '0px', fontSize: '13px', outline: 'none', fontFamily: f, boxSizing: 'border-box', background: 'white' }} />
             </div>
-            <button onClick={fetchSellers} style={{ width: '42px', height: '42px', border: '1px solid #EBEBF0', borderRadius: '12px', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
+            <button onClick={fetchSellers} style={{ width: '42px', height: '42px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
               <FiRefreshCw size={15} />
             </button>
           </div>
@@ -121,7 +121,7 @@ export default function AdminSellersPage() {
           <div style={{ display: 'flex', gap: '6px', marginBottom: '18px', flexWrap: 'wrap' }}>
             {STATUS_TABS.map(tab => (
               <button key={tab.key} onClick={() => { setStatus(tab.key); setPage(1) }}
-                style={{ padding: '8px 18px', borderRadius: '999px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: f, transition: 'all 0.2s',
+                style={{ padding: '8px 18px', borderRadius: '00px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: f, transition: 'all 0.2s',
                   background: status === tab.key ? 'linear-gradient(135deg,#E91E8C,#7C3AED)' : 'white',
                   color: status === tab.key ? 'white' : '#6B7280',
                   boxShadow: status === tab.key ? '0 4px 12px rgba(233,30,140,0.25)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -131,7 +131,7 @@ export default function AdminSellersPage() {
           </div>
 
           {/* Table */}
-          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #EBEBF0', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ background: 'white', borderRadius: '0px', border: '1px solid #EBEBF0', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
@@ -164,7 +164,7 @@ export default function AdminSellersPage() {
                         onMouseLeave={e => e.currentTarget.style.background = 'white'}>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg,#FCE4F3,#EDD6FD)', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', flexShrink: 0 }}>
+                            <div style={{ width: '34px', height: '34px', borderRadius: '20%', background: 'linear-gradient(135deg,#FCE4F3,#EDD6FD)', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', flexShrink: 0 }}>
                               {getInitials(seller.name)}
                             </div>
                             <div>
@@ -193,23 +193,23 @@ export default function AdminSellersPage() {
                             </button>
                             {st === 'pending' && <>
                               <button onClick={() => handleApprove(seller._id)}
-                                style={{ width: '30px', height: '30px', borderRadius: '8px', border: 'none', background: '#DCFCE7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A' }}>
+                                style={{ width: '30px', height: '30px', borderRadius: '0px', border: 'none', background: '#DCFCE7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A' }}>
                                 <FiCheck size={13} />
                               </button>
                               <button onClick={() => setRejectModal({ sellerId: seller._id, sellerName: seller.name })}
-                                style={{ width: '30px', height: '30px', borderRadius: '8px', border: 'none', background: '#FEE2E2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
+                                style={{ width: '30px', height: '30px', borderRadius: '0px', border: 'none', background: '#FEE2E2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
                                 <FiX size={13} />
                               </button>
                             </>}
                             {st === 'approved' && (
                               <button onClick={() => handleSuspend(seller._id)}
-                                style={{ padding: '5px 12px', borderRadius: '8px', border: 'none', background: '#F1F5F9', color: '#64748B', cursor: 'pointer', fontSize: '11px', fontWeight: '600', fontFamily: f }}>
+                                style={{ padding: '5px 12px', borderRadius: '0px', border: 'none', background: '#F1F5F9', color: '#64748B', cursor: 'pointer', fontSize: '11px', fontWeight: '600', fontFamily: f }}>
                                 Suspend
                               </button>
                             )}
                             {st === 'suspended' && (
                               <button onClick={() => handleSuspend(seller._id)}
-                                style={{ padding: '5px 12px', borderRadius: '8px', border: 'none', background: '#DCFCE7', color: '#16A34A', cursor: 'pointer', fontSize: '11px', fontWeight: '600', fontFamily: f }}>
+                                style={{ padding: '5px 12px', borderRadius: '0px', border: 'none', background: '#DCFCE7', color: '#16A34A', cursor: 'pointer', fontSize: '11px', fontWeight: '600', fontFamily: f }}>
                                 Unsuspend
                               </button>
                             )}
@@ -228,10 +228,10 @@ export default function AdminSellersPage() {
                 <span style={{ fontSize: '12px', color: '#94A3B8' }}>Showing {sellers.length} of {total}</span>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '8px', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>← Prev</button>
+                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>← Prev</button>
                   <span style={{ padding: '6px 14px', fontSize: '12px', color: '#4B4B6B', fontWeight: '600' }}>Page {page}/{totalPages}</span>
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '8px', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>Next →</button>
+                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>Next →</button>
                 </div>
               </div>
             )}
@@ -242,7 +242,7 @@ export default function AdminSellersPage() {
       {/* Seller Detail Modal */}
       {selected && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setSelected(null)}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: 'white', borderRadius: '0px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #EBEBF0' }}>
               <h2 style={{ fontSize: '17px', fontWeight: '700', color: '#1A1A2E', margin: 0, fontFamily: f }}>Seller Details</h2>
               <button onClick={() => setSelected(null)} style={{ background: '#F1F5F9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', color: '#6B7280' }}>✕</button>
@@ -294,8 +294,8 @@ export default function AdminSellersPage() {
                   <p style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px' }}>Recent Products ({selected.products.length})</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selected.products.slice(0, 5).map(p => (
-                      <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: '#F9F9FB', borderRadius: '10px' }}>
-                        {p.images?.[0] && <img src={p.images[0]} style={{ width: '38px', height: '38px', objectFit: 'cover', borderRadius: '8px', background: '#E2E8F0' }} alt="" />}
+                      <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: '#F9F9FB', borderRadius: '0px' }}>
+                        {p.images?.[0] && <img src={p.images[0]} style={{ width: '38px', height: '38px', objectFit: 'cover', borderRadius: '0px', background: '#E2E8F0' }} alt="" />}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A2E', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
                           <p style={{ fontSize: '11px', color: '#94A3B8', margin: 0 }}>₹{p.sellingPrice}</p>
@@ -309,11 +309,11 @@ export default function AdminSellersPage() {
               {selected.seller?.sellerDetails?.approvalStatus === 'pending' && (
                 <div style={{ display: 'flex', gap: '12px', paddingTop: '16px', borderTop: '1px solid #EBEBF0' }}>
                   <button onClick={() => handleApprove(selected.seller._id)} disabled={actionLoad}
-                    style={{ flex: 1, padding: '13px', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    style={{ flex: 1, padding: '13px', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <FiCheck size={15} /> Approve Seller
                   </button>
                   <button onClick={() => setRejectModal({ sellerId: selected.seller._id, sellerName: selected.seller.name })}
-                    style={{ flex: 1, padding: '13px', background: 'linear-gradient(135deg,#f43f5e,#be123c)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    style={{ flex: 1, padding: '13px', background: 'linear-gradient(135deg,#f43f5e,#be123c)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <FiX size={15} /> Reject
                   </button>
                 </div>

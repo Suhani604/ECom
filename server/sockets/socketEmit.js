@@ -72,3 +72,13 @@ export const emitLowStock = (io, { sellerId, productId, productTitle, stock }) =
     time: new Date(),
   })
 }
+// ADD this function to your existing socketEmit.js
+
+export const emitOutForDelivery = (io, { orderId, buyerId, trackingUrl }) => {
+  io.to(`user_${buyerId}`).emit('out_for_delivery', {
+    orderId,
+    trackingUrl,
+    message: '🚚 Your order is out for delivery!',
+    timestamp: new Date(),
+  })
+}

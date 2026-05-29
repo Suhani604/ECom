@@ -17,6 +17,10 @@ import adminRoutes       from './routes/adminRoutes.js'
 import productRoutes     from './routes/productRoutes.js'
 import orderRoutes       from './routes/orderRoutes.js'
 import buyerRoutes       from './routes/buyerRoutes.js'
+import categoryRoutes    from './routes/categoryRoutes.js'   // 🆕
+import reviewRoutes from './routes/reviewRoutes.js'
+import bannerRoutes from './routes/bannerRoutes.js'
+
 
 const app    = express()
 const server = http.createServer(app)
@@ -46,6 +50,11 @@ app.use('/api/admin',    adminRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/orders',   orderRoutes)
 app.use('/api/buyer',    buyerRoutes)
+app.use('/api/reviews', reviewRoutes)
+// ...
+app.use('/api/banners', bannerRoutes)
+// server.js
+app.use('/api/categories', categoryRoutes)   // ✅ was: /api
 
 app.use((req, res) => res.status(404).json({ success: false, message: `Route ${req.method} ${req.url} not found` }))
 app.use(errorHandler)

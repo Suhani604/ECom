@@ -2,22 +2,252 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FiPackage, FiCheckCircle, FiClock, FiXCircle,
-  FiPlus, FiAlertCircle, FiLogOut, FiTrendingUp,
-  FiStar, FiShoppingBag, FiBell, FiChevronRight,
-  FiUser, FiBarChart2,
+  FiPlus, FiAlertCircle, FiTrendingUp, FiStar,
+  FiShoppingBag, FiChevronRight, FiUser, FiBarChart2,
+  FiChevronDown, FiExternalLink, FiHelpCircle,
 } from 'react-icons/fi'
-import { getDashboardStatsAPI, getSellerProfileAPI } from '../../api/sellerAPI.js'
+import { getDashboardStatsAPI, getSellerProfileAPI, getSellerOrdersAPI } from '../../api/sellerAPI.js'
 import useAuthStore from '../../context/useAuthStore.js'
+import SellerLayout from './SellerLayout.jsx'
 
+const f = '"DM Sans", system-ui, sans-serif'
+
+/* ── 3-step onboarding tracker ────────────────────────────────────────────── */
+function OnboardingTracker({ stats, seller, navigate }) {
+  const sd             = seller?.sellerDetails || {}
+  const onboardingDone = sd.onboardingComplete
+  const approvalStatus = sd.approvalStatus || 'pending'
+  const hasProducts    = stats.totalProducts > 0
+  const hasOrders      = stats.totalOrders > 0   // ← now uses real order count
+
+  const steps = [
+    {
+      num: 1, done: onboardingDone,
+      label: 'Upload catalogs to get started',
+      sublabel: onboardingDone ? 'Profile complete ✓' : 'Complete your seller profile',
+      action: onboardingDone ? null : () => navigate('/seller/onboarding'),
+      actionLabel: 'Complete Profile',
+    },
+    {
+      num: 2, done: approvalStatus === 'approved',
+      label: 'Catalogs go live on StyleHub',
+      sublabel: approvalStatus === 'approved' ? 'Your account is approved ✓' : 'Waiting for admin approval',
+      action: null,
+    },
+    {
+      num: 3, done: hasOrders,
+      label: 'Get your first order',
+      sublabel: hasOrders ? `You have ${stats.totalOrders} order(s)!` : 'Start receiving orders from buyers',
+      action: hasOrders
+        ? () => navigate('/seller/orders')
+        : hasProducts
+          ? () => navigate('/seller/products')
+          : () => navigate('/seller/products/add'),
+      actionLabel: hasOrders ? 'View Orders' : hasProducts ? 'View Products' : 'Add Products',
+    },
+  ]
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+      {/* Step tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', overflowX: 'auto' }}>
+        {steps.map((step, i) => {
+          const isCurrent = !step.done && (i === 0 || steps[i - 1].done)
+          return (
+            <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 16px', borderBottom: isCurrent ? '2.5px solid #7C3AED' : '2.5px solid transparent', minWidth: 0, cursor: 'pointer', transition: 'all 0.15s', background: isCurrent ? '#FAFAF9' : 'transparent' }}>
+              {step.done ? (
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <FiCheckCircle size={13} style={{ color: '#16A34A' }} />
+                </div>
+              ) : (
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: isCurrent ? '#EDE9FE' : '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: isCurrent ? '#7C3AED' : '#9CA3AF' }}>{i + 1}</span>
+                </div>
+              )}
+              <span style={{ fontSize: '12px', fontWeight: isCurrent ? '700' : '500', color: step.done ? '#6B7280' : isCurrent ? '#1F2937' : '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {step.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Active step body */}
+      {steps.map((step, i) => {
+        const isCurrent = !step.done && (i === 0 || steps[i - 1].done)
+        if (!isCurrent) return null
+        return (
+          <div key={i} style={{ padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ width: '40px', height: '40px', background: '#FEF3C7', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <FiAlertCircle size={20} style={{ color: '#D97706' }} />
+              </div>
+              <div>
+                <p style={{ margin: '0 0 4px', fontWeight: '700', color: '#111827', fontSize: '14px' }}>
+                  {i === 0 ? 'Complete your seller profile' : i === 1 ? 'Account approval in progress' : 'Start getting orders'}
+                </p>
+                <p style={{ margin: 0, color: '#6B7280', fontSize: '12px', lineHeight: 1.6 }}>
+                  {i === 0 ? 'Add GSTIN, bank details and pickup address to start selling on StyleHub.' : i === 1 ? 'Admin will review and approve your account within 24–48 hours.' : 'Add more products and quality images to attract buyers.'}
+                </p>
+              </div>
+            </div>
+            {step.action && (
+              <button onClick={step.action}
+                style={{ flexShrink: 0, padding: '10px 20px', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: f, boxShadow: '0 4px 12px rgba(124,58,237,0.3)', transition: 'all 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                {step.actionLabel} →
+              </button>
+            )}
+          </div>
+        )
+      })}
+
+      {/* All done */}
+      {steps.every(s => s.done) && (
+        <div style={{ padding: '24px', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontWeight: '700', color: '#16A34A', fontSize: '14px' }}>🎉 All steps complete! You're selling on StyleHub.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Recent Orders mini-list ──────────────────────────────────────────────── */
+function RecentOrdersPanel({ orders, navigate }) {
+  const STATUS_COLOR = {
+    pending:   { color: '#D97706', bg: '#FFFBEB' },
+    confirmed: { color: '#2563EB', bg: '#EFF6FF' },
+    shipped:   { color: '#7C3AED', bg: '#F5F3FF' },
+    delivered: { color: '#059669', bg: '#ECFDF5' },
+    cancelled: { color: '#DC2626', bg: '#FEF2F2' },
+  }
+
+  if (!orders.length) return null
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+      <div style={{ padding: '14px 18px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#111827' }}>Recent Orders</p>
+        <button onClick={() => navigate('/seller/orders')}
+          style={{ fontSize: '11px', fontWeight: '700', color: '#7C3AED', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          View All <FiChevronRight size={12} />
+        </button>
+      </div>
+      <div>
+        {orders.slice(0, 5).map((order, idx) => {
+          const buyer = order.buyer || {}
+          const cfg = STATUS_COLOR[order.status] || STATUS_COLOR.pending
+          const addr = order.shippingAddress || {}
+          return (
+            <div key={order._id || idx}
+              onClick={() => navigate('/seller/orders')}
+              style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: idx < 4 ? '1px solid #F9FAFB' : 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+
+              {/* Avatar */}
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <FiUser size={15} style={{ color: '#7C3AED' }} />
+              </div>
+
+              {/* Buyer info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#1F2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {buyer.name || 'Unknown Buyer'}
+                </p>
+                <p style={{ margin: '1px 0 0', fontSize: '10px', color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {[addr.city, addr.state].filter(Boolean).join(', ') || buyer.email || '—'}
+                </p>
+              </div>
+
+              {/* Amount */}
+              <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#111827', flexShrink: 0 }}>
+                ₹{(order.totalAmount || 0).toLocaleString('en-IN')}
+              </p>
+
+              {/* Status badge */}
+              <span style={{ fontSize: '10px', fontWeight: '700', color: cfg.color, background: cfg.bg, padding: '3px 8px', borderRadius: '20px', flexShrink: 0 }}>
+                {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ── Learn section ────────────────────────────────────────────────────────── */
+function LearnPanel({ seller, navigate }) {
+  return (
+    <div style={{ width: '300px', flexShrink: 0 }}>
+      {/* Account setup */}
+      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', marginBottom: '14px', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #F3F4F6' }}>
+          <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#111827' }}>Complete your account setup</p>
+          <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#6B7280' }}>Add the below information to improve your selling journey</p>
+        </div>
+        <div style={{ padding: '4px 0' }}>
+          {[
+            { icon: '🔑', label: 'Set Password',    done: true,                                          path: '/seller/onboarding' },
+            { icon: '🏦', label: 'Bank Details',    done: !!seller?.sellerDetails?.bankName,             path: '/seller/onboarding' },
+            { icon: '📍', label: 'Pickup Address',  done: !!seller?.sellerDetails?.pickupAddress?.city,  path: '/seller/onboarding' },
+          ].map(item => (
+            <button key={item.label} onClick={() => navigate(item.path)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, transition: 'background 0.15s', textAlign: 'left' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+              <span style={{ fontSize: '16px' }}>{item.icon}</span>
+              <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: item.done ? '#6B7280' : '#111827', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
+              {item.done
+                ? <FiCheckCircle size={14} style={{ color: '#16A34A' }} />
+                : <FiChevronRight size={14} style={{ color: '#9CA3AF' }} />
+              }
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Learn & Grow */}
+      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #F3F4F6' }}>
+          <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#111827' }}>Learn & Grow On StyleHub</p>
+        </div>
+        <div style={{ padding: '4px 0' }}>
+          {[
+            { icon: '📚', label: 'Book free live training',      badge: 'Expert Led' },
+            { icon: '📦', label: 'Prepare catalogs for StyleHub' },
+            { icon: '💰', label: 'Pricing & commission' },
+            { icon: '🚚', label: 'Delivery & Returns' },
+          ].map(item => (
+            <button key={item.label}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, transition: 'background 0.15s', textAlign: 'left' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+              <span style={{ fontSize: '16px' }}>{item.icon}</span>
+              <span style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#374151' }}>{item.label}</span>
+              {item.badge && (
+                <span style={{ fontSize: '9px', fontWeight: '700', background: '#DCFCE7', color: '#16A34A', padding: '2px 6px', borderRadius: '20px' }}>{item.badge}</span>
+              )}
+              <FiChevronRight size={13} style={{ color: '#D1D5DB' }} />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Main Dashboard ────────────────────────────────────────────────────────── */
 export default function SellerDashboard() {
-  const navigate         = useNavigate()
-  const { user, logout } = useAuthStore()
-  const [stats,   setStats]   = useState({ totalProducts:0, activeProducts:0, pendingProducts:0, rejectedProducts:0 })
-  const [seller,  setSeller]  = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate      = useNavigate()
+  const { user }      = useAuthStore()
 
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
+  const [stats,         setStats]         = useState({ totalProducts: 0, activeProducts: 0, pendingProducts: 0, rejectedProducts: 0, totalOrders: 0, pendingOrders: 0 })
+  const [seller,        setSeller]        = useState(null)
+  const [recentOrders,  setRecentOrders]  = useState([])
+  const [loading,       setLoading]       = useState(true)
 
   useEffect(() => {
     const load = async () => {
@@ -25,230 +255,145 @@ export default function SellerDashboard() {
         const [s, p] = await Promise.all([getDashboardStatsAPI(), getSellerProfileAPI()])
         setStats(s.data.stats)
         setSeller(p.data.user)
-      } catch(_) {}
+
+        // Fetch recent 5 orders for the mini-list
+        try {
+          const ordRes = await getSellerOrdersAPI({ page: 1, limit: 5 })
+          setRecentOrders(ordRes.data.orders || [])
+          // Merge order counts into stats if backend doesn't return them
+          setStats(prev => ({
+            ...prev,
+            totalOrders:   ordRes.data.total || 0,
+            pendingOrders: (ordRes.data.orders || []).filter(o => o.status === 'pending').length,
+          }))
+        } catch (_) {}
+      } catch (_) {}
       finally { setLoading(false) }
     }
     load()
   }, [])
 
-  const approvalStatus = seller?.sellerDetails?.approvalStatus || 'pending'
-  const onboardingDone = seller?.sellerDetails?.onboardingComplete
-  const sd = seller?.sellerDetails || {}
+  const sd             = seller?.sellerDetails || {}
+  const approvalStatus = sd.approvalStatus || 'pending'
 
+  /* ── stat cards: now includes Orders ── */
   const statCards = [
-    { key:'totalProducts',    label:'Total Products', Icon: FiPackage,     light:'bg-violet-50', tc:'text-violet-600', bc:'border-violet-100' },
-    { key:'activeProducts',   label:'Live & Active',  Icon: FiCheckCircle, light:'bg-emerald-50',tc:'text-emerald-600',bc:'border-emerald-100' },
-    { key:'pendingProducts',  label:'Under Review',   Icon: FiClock,       light:'bg-amber-50',  tc:'text-amber-600',  bc:'border-amber-100' },
-    { key:'rejectedProducts', label:'Rejected',       Icon: FiXCircle,     light:'bg-rose-50',   tc:'text-rose-500',   bc:'border-rose-100' },
+    { key: 'totalProducts',    label: 'Total Products', Icon: FiPackage,     light: '#F5F3FF', tc: '#7C3AED', border: '#EDE9FE', path: '/seller/products' },
+    { key: 'activeProducts',   label: 'Live & Active',  Icon: FiCheckCircle, light: '#ECFDF5', tc: '#059669', border: '#D1FAE5', path: '/seller/products' },
+    { key: 'pendingProducts',  label: 'Under Review',   Icon: FiClock,       light: '#FFFBEB', tc: '#D97706', border: '#FDE68A', path: '/seller/products' },
+    { key: 'totalOrders',      label: 'Total Orders',   Icon: FiShoppingBag, light: '#EFF6FF', tc: '#2563EB', border: '#BFDBFE', path: '/seller/orders' },
   ]
 
+  /* ── quick actions: Orders replaces Analytics ── */
   const quickActions = [
-    { label:'Add Product', sub:'List new garments',       Icon: FiPlus,      grad:'from-pink-500 to-rose-500',     path:'/seller/products/add' },
-    { label:'My Products', sub:'View & manage listings',  Icon: FiPackage,   grad:'from-violet-500 to-indigo-500', path:'/seller/products' },
-    { label:'My Profile',  sub:'GSTIN, bank, address',    Icon: FiUser,      grad:'from-emerald-500 to-teal-500',  path:'/seller/onboarding' },
-    { label:'Analytics',   sub:'Sales & performance',     Icon: FiBarChart2, grad:'from-amber-500 to-orange-500',  path:'/seller/analytics' },
+    { label: 'Add Product', sub: 'List new garments',      Icon: FiPlus,        grad: 'linear-gradient(135deg,#f43f5e,#ec4899)', path: '/seller/products/add' },
+    { label: 'My Products', sub: 'View & manage listings', Icon: FiPackage,     grad: 'linear-gradient(135deg,#7c3aed,#4f46e5)', path: '/seller/products' },
+    { label: 'Orders',      sub: 'Buyer orders & details', Icon: FiShoppingBag, grad: 'linear-gradient(135deg,#2563eb,#0891b2)', path: '/seller/orders' },
+    { label: 'My Profile',  sub: 'GSTIN, bank, address',   Icon: FiUser,        grad: 'linear-gradient(135deg,#059669,#0d9488)', path: '/seller/profile' },
   ]
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily:'Poppins, sans-serif' }}>
+    <SellerLayout seller={seller}>
 
-      {/* ── NAVBAR ── */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg shadow-pink-200"
-              style={{ background:'linear-gradient(135deg,#f97316,#ec4899)' }}>K</div>
-            <div>
-              <p className="font-bold text-sm text-gray-900 leading-tight">Seller Hub</p>
-              <p className="text-xs text-gray-400 leading-tight">{user?.name}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-400">
-              <FiBell size={18}/>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-pink-500 rounded-full"/>
-            </button>
-            <button onClick={() => { logout(); navigate('/login') }}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
-              <FiLogOut size={14}/> <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
+      {/* Alert banner */}
+      <div style={{ background: '#FFF7F0', borderBottom: '1px solid #FDDCBC', padding: '9px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FiAlertCircle size={14} style={{ color: '#EA580C', flexShrink: 0 }} />
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#C2410C' }}>Complete your profile </span>
+          <span style={{ fontSize: '12px', color: '#9A3412' }}>to start selling on StyleHub and receiving orders.</span>
         </div>
-      </nav>
+        <button onClick={() => navigate('/seller/onboarding')}
+          style={{ fontSize: '11px', fontWeight: '700', color: '#7C3AED', background: 'none', border: '1.5px solid #7C3AED', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontFamily: f, whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#7C3AED'; e.currentTarget.style.color = '#fff' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#7C3AED' }}>
+          Complete Now
+        </button>
+      </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <div style={{ padding: '24px', display: 'flex', gap: '24px', alignItems: 'flex-start', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
 
-        {/* ── ONBOARDING BANNER ── */}
-        {!onboardingDone && !loading && (
-          <div className="rounded-2xl p-5 flex items-center justify-between gap-4 border border-orange-200"
-            style={{ background:'linear-gradient(135deg,#fff7ed,#fef3c7)' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiAlertCircle className="text-orange-500" size={20}/>
-              </div>
-              <div>
-                <p className="font-bold text-orange-800 text-sm">Complete your seller profile</p>
-                <p className="text-orange-600 text-xs mt-0.5">Add GSTIN, bank details and pickup address to start selling</p>
-              </div>
-            </div>
-            <button onClick={() => navigate('/seller/onboarding')}
-              className="flex-shrink-0 px-4 py-2 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
-              style={{ background:'linear-gradient(135deg,#f97316,#ea580c)' }}>
-              Complete Now →
-            </button>
+        {/* ── LEFT: Main content ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* Welcome heading */}
+          <div style={{ marginBottom: '20px' }}>
+            <h1 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: '800', color: '#111827' }}>
+              Welcome {sd.businessName || user?.name?.split(' ')[0] || 'Seller'} 👋
+            </h1>
+            <p style={{ margin: 0, fontSize: '13px', color: '#6B7280' }}>Let's get your business started in 3 steps</p>
           </div>
-        )}
 
-        {/* ── APPROVAL PENDING ── */}
-        {onboardingDone && approvalStatus === 'pending' && (
-          <div className="rounded-2xl p-5 flex items-center gap-3 border border-yellow-200"
-            style={{ background:'linear-gradient(135deg,#fffbeb,#fef9c3)' }}>
-            <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <FiClock className="text-yellow-600" size={20}/>
-            </div>
-            <div>
-              <p className="font-bold text-yellow-800 text-sm">Account under review</p>
-              <p className="text-yellow-700 text-xs mt-0.5">Admin will approve your account within 24–48 hours. You'll be notified.</p>
-            </div>
-          </div>
-        )}
+          {/* 3-step onboarding */}
+          {!loading && <OnboardingTracker stats={stats} seller={seller} navigate={navigate} />}
 
-        {/* ── HERO BANNER ── */}
-        <div className="relative rounded-2xl overflow-hidden p-6 sm:p-8 shadow-xl shadow-pink-200"
-          style={{ background:'linear-gradient(135deg,#ec4899,#f97316)' }}>
-          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"/>
-          <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none"/>
-          <div className="absolute top-4 right-32 w-20 h-20 bg-white/10 rounded-full pointer-events-none"/>
+          {/* Recent orders mini-list — only shown when orders exist */}
+          {!loading && recentOrders.length > 0 && (
+            <RecentOrdersPanel orders={recentOrders} navigate={navigate} />
+          )}
 
-          <div className="relative flex items-center justify-between">
-            <div>
-              <p className="text-pink-100 text-sm font-medium mb-1">{greeting} 👋</p>
-              <h1 className="text-white text-2xl sm:text-3xl font-extrabold mb-1 drop-shadow">
-                {user?.name?.split(' ')[0] || 'Seller'}
-              </h1>
-              <p className="text-pink-100 text-sm">{sd.businessName || 'Your Store'}</p>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                {approvalStatus === 'approved' && (
-                  <span className="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-semibold border border-white/20">
-                    ✓ Verified Seller
-                  </span>
-                )}
-                <span className="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-semibold border border-white/20">
-                  ⭐ Trusted Store
-                </span>
-              </div>
-            </div>
-            <div className="hidden sm:flex flex-col items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 flex-shrink-0">
-              <FiShoppingBag className="text-white mb-1" size={26}/>
-              <p className="text-white text-xs font-semibold capitalize">{approvalStatus}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── STAT CARDS ── */}
-        <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Overview</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {statCards.map(({ key, label, Icon, light, tc, bc }) => (
+          {/* Stats */}
+          <p style={{ fontSize: '10px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 12px' }}>Overview</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '24px' }}>
+            {statCards.map(({ key, label, Icon, light, tc, border, path }) => (
               <div key={key}
-                className={`bg-white rounded-2xl p-5 border ${bc} shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-default`}>
-                <div className={`w-10 h-10 ${light} rounded-xl flex items-center justify-center mb-3`}>
-                  <Icon className={tc} size={18}/>
+                onClick={() => path && navigate(path)}
+                style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: `1px solid ${border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.2s', cursor: path ? 'pointer' : 'default' }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'none' }}>
+                <div style={{ width: '38px', height: '38px', background: light, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                  <Icon size={17} style={{ color: tc }} />
                 </div>
-                <p className="text-xs text-gray-400 font-semibold mb-1">{label}</p>
+                <p style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '600', margin: '0 0 3px', letterSpacing: '0.3px' }}>{label}</p>
                 {loading
-                  ? <div className="h-9 w-14 bg-gray-100 rounded-xl animate-pulse"/>
-                  : <p className={`text-3xl font-extrabold ${tc}`}>{stats[key] ?? 0}</p>
+                  ? <div style={{ height: '32px', width: '48px', background: '#F1F5F9', borderRadius: '8px' }} />
+                  : <p style={{ fontSize: '30px', fontWeight: '900', color: tc, margin: 0, lineHeight: 1 }}>{stats[key] ?? 0}</p>
                 }
               </div>
             ))}
           </div>
-        </div>
 
-        {/* ── QUICK ACTIONS ── */}
-        <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Quick Actions</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Quick actions */}
+          <p style={{ fontSize: '10px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 12px' }}>Quick Actions</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '24px' }}>
             {quickActions.map(({ label, sub, Icon, grad, path }) => (
               <button key={path} onClick={() => navigate(path)}
-                className="group bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center mb-3 shadow-md group-hover:scale-110 transition-transform`}>
-                  <Icon className="text-white" size={20}/>
+                style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #F1F5F9', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', cursor: 'pointer', textAlign: 'left', fontFamily: f, transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'none' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}>
+                  <Icon size={19} style={{ color: '#fff' }} />
                 </div>
-                <p className="text-sm font-bold text-gray-800">{label}</p>
-                <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{sub}</p>
-                <div className="flex items-center gap-1 mt-2 text-xs text-gray-300 group-hover:text-pink-400 transition-colors font-medium">
-                  Open <FiChevronRight size={12}/>
+                <p style={{ margin: '0 0 2px', fontSize: '12px', fontWeight: '800', color: '#1A1A2E' }}>{label}</p>
+                <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#94A3B8', lineHeight: 1.5 }}>{sub}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#CBD5E1', fontWeight: '600' }}>
+                  Open <FiChevronRight size={10} />
                 </div>
               </button>
             ))}
           </div>
-        </div>
 
-        {/* ── BOOST BANNER ── */}
-        <div className="rounded-2xl p-5 flex items-center gap-4 border border-violet-100"
-          style={{ background:'linear-gradient(135deg,#f5f3ff,#ede9fe)' }}>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md shadow-violet-200"
-            style={{ background:'linear-gradient(135deg,#7c3aed,#4f46e5)' }}>
-            <FiTrendingUp className="text-white" size={20}/>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-violet-800">Boost your sales!</p>
-            <p className="text-xs text-violet-500 mt-0.5">Add more products and quality images to reach more buyers on the platform.</p>
-          </div>
-          <button onClick={() => navigate('/seller/products/add')}
-            className="flex-shrink-0 px-4 py-2 text-white text-xs font-bold rounded-xl shadow hover:shadow-lg hover:-translate-y-0.5 transition-all"
-            style={{ background:'linear-gradient(135deg,#7c3aed,#4f46e5)' }}>
-            Add Now
-          </button>
-        </div>
-
-        {/* ── ACCOUNT SUMMARY ── */}
-        {seller && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Account Summary</p>
-              <button onClick={() => navigate('/seller/onboarding')}
-                className="text-xs text-pink-500 font-semibold hover:text-pink-600 flex items-center gap-1 transition-colors">
-                Edit <FiChevronRight size={12}/>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-50">
-              {[
-                { label:'Business',    value: sd.businessName },
-                { label:'GSTIN',       value: sd.gstin,               mono: true },
-                { label:'Bank',        value: sd.bankName },
-                { label:'Pickup City', value: sd.pickupAddress?.city },
-              ].map((item) => (
-                <div key={item.label} className="px-5 py-4">
-                  <p className="text-xs text-gray-400 mb-1">{item.label}</p>
-                  <p className={`text-sm font-bold text-gray-800 truncate ${item.mono ? 'font-mono text-xs' : ''}`}>
-                    {item.value || '—'}
-                  </p>
+          {/* Tips */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+            {[
+              { Icon: FiStar,       bg: '#FFFBEB', ic: '#D97706', title: 'Quality Photos',      tip: 'Use 3–8 clear images per product for better buyer trust.' },
+              { Icon: FiPackage,    bg: '#ECFDF5', ic: '#059669', title: 'Competitive Pricing', tip: 'Price smartly to rank higher and attract more buyers.' },
+              { Icon: FiTrendingUp, bg: '#F5F3FF', ic: '#7C3AED', title: 'Keep Stock Updated',  tip: 'Mark out-of-stock variants quickly to avoid cancellations.' },
+            ].map(({ Icon, bg, ic, title, tip }) => (
+              <div key={title} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #F1F5F9', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ width: '34px', height: '34px', background: bg, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                  <Icon size={15} style={{ color: ic }} />
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── TIPS ── */}
-        <div className="grid sm:grid-cols-3 gap-4 pb-4">
-          {[
-            { Icon: FiStar,       bg:'bg-amber-50',   ic:'text-amber-500',  title:'Quality Photos',      tip:'Use 3–8 clear images per product for better buyer trust and conversions.' },
-            { Icon: FiPackage,    bg:'bg-emerald-50', ic:'text-emerald-500',title:'Competitive Pricing', tip:'Price smartly to rank higher in search and attract more buyers.' },
-            { Icon: FiTrendingUp, bg:'bg-violet-50',  ic:'text-violet-500', title:'Keep Stock Updated',  tip:'Mark out-of-stock variants quickly to avoid order cancellations.' },
-          ].map(({ Icon, bg, ic, title, tip }) => (
-            <div key={title} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className={`w-9 h-9 ${bg} rounded-xl flex items-center justify-center mb-3`}>
-                <Icon className={ic} size={16}/>
+                <p style={{ margin: '0 0 3px', fontSize: '12px', fontWeight: '800', color: '#1A1A2E' }}>{title}</p>
+                <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8', lineHeight: 1.7 }}>{tip}</p>
               </div>
-              <p className="text-sm font-bold text-gray-800 mb-1">{title}</p>
-              <p className="text-xs text-gray-400 leading-relaxed">{tip}</p>
-            </div>
-          ))}
+            ))}
+          </div>
+
         </div>
 
+        {/* ── RIGHT: Learn panel ── */}
+        {!loading && <LearnPanel seller={seller} navigate={navigate} />}
       </div>
-    </div>
+    </SellerLayout>
   )
 }

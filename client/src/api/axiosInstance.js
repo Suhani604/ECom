@@ -26,5 +26,19 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const url = error.config?.url || ''
+    const status = error.response?.status
+
+    // ✅ Only logout on 401 for auth routes, NOT for payment routes
+    if (status === 401 && !url.includes('/razorpay') && !url.includes('/orders')) {
+      useAuthStore.getState().logout()
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
 
 export default api

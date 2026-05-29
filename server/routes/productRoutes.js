@@ -1,11 +1,13 @@
 import express from 'express'
 import Product from '../models/Product.js'
-import { getProducts, getProductById } from '../controllers/productController.js'
+// ✅ CORRECT — one import line
+import { getProducts, getProductById, debugProducts } from '../controllers/productController.js'
 
 const router = express.Router()
 
 router.get('/',    getProducts)
 router.get('/:id', getProductById)
+
 
 router.get('/', async (req, res) => {
   try {

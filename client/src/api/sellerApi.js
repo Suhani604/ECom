@@ -52,3 +52,20 @@ export const getDashboardStatsAPI = () =>
 
 export const getCategoriesAPI = () =>
   api.get('/seller/categories')
+
+// ─── Orders (Seller view) ─────────────────────────────────────────────────────
+// GET /seller/orders?page=1&limit=20&status=pending&search=buyerName
+export const getSellerOrdersAPI = (params = {}) =>
+  api.get('/seller/orders', { params })
+
+// PUT /seller/orders/:orderId/status  { status: 'confirmed' | 'shipped' | 'delivered' | 'cancelled' }
+export const updateOrderStatusAPI = (orderId, status) =>
+  api.put(`/seller/orders/${orderId}/status`, { status })
+
+// GET /seller/orders/:orderId  (single order full detail)
+export const getSellerOrderByIdAPI = (orderId) =>
+  api.get(`/seller/orders/${orderId}`)
+
+// GET /seller/stats  (order counts + revenue — tab-independent)
+export const getSellerStatsAPI = () => api.get('/seller/stats')
+

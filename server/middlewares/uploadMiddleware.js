@@ -1,11 +1,10 @@
 import multer from 'multer'
-import path   from 'path'
+import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname  = path.dirname(__filename)
 
-// ─── Local disk storage (no Cloudinary needed for now) ────────────────────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '../uploads'))
@@ -25,6 +24,11 @@ const fileFilter = (req, file, cb) => {
   }
 }
 
+// default export — used by bannerRoutes as uploadMiddleware.single('image')
+const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } })
+export default upload
+
+// named exports — used by sellerRoutes
 export const uploadProductImages = multer({
   storage,
   fileFilter,

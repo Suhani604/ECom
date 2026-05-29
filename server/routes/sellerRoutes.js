@@ -4,6 +4,9 @@ import {
   getSellerProfile, updateSellerProfile,
   addProduct, getMyProducts, getProduct, updateProduct, deleteProduct,
   getDashboardStats, getCategories,
+  getSellerOrders,
+  updateSellerOrderStatus,
+  getSellerStats,            // ← ADD
 } from '../controllers/sellerController.js'
 import { authenticate, authorise } from '../middlewares/authMiddleware.js'
 import { uploadDocument, uploadProductImages } from '../middlewares/uploadMiddleware.js'
@@ -26,5 +29,8 @@ router.put('/products/:id',        uploadProductImages,  updateProduct)
 router.delete('/products/:id',     deleteProduct)
 router.get('/dashboard',           getDashboardStats)
 router.get('/categories',          getCategories)
+router.get('/orders',                  getSellerOrders)
+router.put('/orders/:orderId/status',  updateSellerOrderStatus)
+router.get('/stats',               getSellerStats)   // ← ADD
 
 export default router

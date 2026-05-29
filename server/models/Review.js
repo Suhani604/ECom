@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 const reviewSchema = new mongoose.Schema({
   product:   { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   buyer:     { type: mongoose.Schema.Types.ObjectId, ref: 'User',    required: true },
-  order:     { type: mongoose.Schema.Types.ObjectId, ref: 'Order',   required: true },
+  order:     { type: mongoose.Schema.Types.ObjectId, ref: 'Order',   default: null }, // ← NOT required anymore
   rating:    { type: Number, required: true, min: 1, max: 5 },
   title:     { type: String, trim: true },
   comment:   { type: String, trim: true },
@@ -11,7 +11,8 @@ const reviewSchema = new mongoose.Schema({
   isVisible: { type: Boolean, default: true },
 }, { timestamps: true })
 
-reviewSchema.index({ product: 1, buyer: 1, order: 1 }, { unique: true })
+// ← Index changed: buyer + product only (not order), so one review per product per buyer
+reviewSchema.index({ product: 1, buyer: 1 }, { unique: true })
 
 const Review = mongoose.model('Review', reviewSchema)
 export default Review

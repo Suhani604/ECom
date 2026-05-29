@@ -138,7 +138,7 @@ export default function AdminDashboard() {
                   <h3 className="font-bold text-gray-800 text-sm mb-1">{a.title}</h3>
                   <p className="text-xs text-gray-400 mb-4">{a.sub}</p>
                   <button onClick={() => navigate(a.path)}
-                    className="w-full py-2 text-white text-xs font-bold rounded-xl transition-all hover:opacity-90 hover:shadow-md"
+                    className="w-full py-2 text-white text-xs font-bold rounded-xl transition-all hover:opacity-70 hover:shadow-md"
                     style={{ background:`linear-gradient(135deg,${a.color},${a.color}dd)` }}>
                     {a.btn} →
                   </button>

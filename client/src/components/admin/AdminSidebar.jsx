@@ -1,5 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { FiLogOut, FiX, FiGrid, FiUsers, FiPackage, FiShoppingBag, FiTrendingUp } from 'react-icons/fi'
+import {
+  FiLogOut, FiX, FiGrid, FiUsers, FiPackage,
+  FiShoppingBag, FiTrendingUp, FiStar, FiImage
+} from 'react-icons/fi'
 import useAuthStore from '../../context/useAuthStore.js'
 
 const LINKS = [
@@ -8,6 +11,8 @@ const LINKS = [
   { path: '/admin/products',  label: 'Products',  Icon: FiPackage },
   { path: '/admin/buyers',    label: 'Buyers',    Icon: FiUsers },
   { path: '/admin/orders',    label: 'Orders',    Icon: FiTrendingUp },
+  { path: '/admin/reviews',   label: 'Reviews',   Icon: FiStar },
+  { path: '/admin/banners',   label: 'Banners',   Icon: FiImage },
 ]
 
 export default function AdminSidebar({ open, onClose }) {
@@ -26,7 +31,6 @@ export default function AdminSidebar({ open, onClose }) {
           lg:translate-x-0 lg:static lg:z-auto`}
         style={{ fontFamily: 'Poppins, sans-serif', boxShadow: '4px 0 24px rgba(0,0,0,0.06)' }}
       >
-        {/* Brand */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-sm"
@@ -41,7 +45,6 @@ export default function AdminSidebar({ open, onClose }) {
           </button>
         </div>
 
-        {/* User */}
         <div className="mx-4 mt-4 mb-1 px-3 py-2.5 rounded-xl flex items-center gap-3" style={{ background: '#FDF0F8' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
             style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)' }}>
@@ -53,21 +56,14 @@ export default function AdminSidebar({ open, onClose }) {
           </div>
         </div>
 
-        {/* Section */}
         <p className="px-5 pt-4 pb-1 text-xs font-bold text-gray-300 uppercase tracking-widest">Main</p>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto pb-4">
           {LINKS.map(({ path, label, Icon }) => (
-            <NavLink
-              key={path}
-              to={path}
-              onClick={onClose}
+            <NavLink key={path} to={path} onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group
-                ${isActive
-                  ? 'text-white shadow-md'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`
+                ${isActive ? 'text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`
               }
               style={({ isActive }) => isActive
                 ? { background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', boxShadow: '0 4px 12px rgba(233,30,140,0.25)' }
@@ -84,12 +80,9 @@ export default function AdminSidebar({ open, onClose }) {
           ))}
         </nav>
 
-        {/* Logout */}
         <div className="px-3 py-4 border-t border-gray-100">
-          <button
-            onClick={() => { logout(); navigate('/login') }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"
-          >
+          <button onClick={() => { logout(); navigate('/login') }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
             <FiLogOut size={16} />
             Logout
           </button>

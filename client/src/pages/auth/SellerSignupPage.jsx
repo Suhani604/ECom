@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import api from '../../api/axiosInstance.js'
 import useAuthStore from '../../context/useAuthStore.js'
 
-const f = 'Poppins, sans-serif'
+const f = '"DM Sans", Poppins, sans-serif'
 
 export default function SellerSignupPage() {
   const navigate   = useNavigate()
@@ -47,171 +47,193 @@ export default function SellerSignupPage() {
   }
 
   const inp = (name) => ({
-    width: '100%', padding: '11px 16px', border: `1.5px solid ${focused === name ? '#7C3AED' : '#EBEBF0'}`,
-    borderRadius: '12px', fontSize: '14px', outline: 'none', fontFamily: f,
-    boxSizing: 'border-box', transition: 'all 0.2s', background: focused === name ? '#F5F0FF' : 'white', color: '#1A1A2E',
+    width: '100%', padding: '12px 16px',
+    border: `1.5px solid ${focused === name ? '#7C3AED' : '#E2E8F0'}`,
+    borderRadius: '10px', fontSize: '14px', outline: 'none', fontFamily: f,
+    boxSizing: 'border-box', transition: 'all 0.2s',
+    background: focused === name ? '#F5F0FF' : '#FAFAFA', color: '#0F172A',
+    boxShadow: focused === name ? '0 0 0 4px rgba(124,58,237,0.08)' : 'none',
   })
 
-  const steps = [
-    { num: 1, icon: '📋', label: 'Business Info', sub: 'GSTIN & business type' },
-    { num: 2, icon: '🏦', label: 'Bank Details',  sub: 'Account & IFSC' },
-    { num: 3, icon: '📍', label: 'Pickup Address', sub: 'Where to collect orders' },
-    { num: 4, icon: '🚀', label: 'Start Selling',  sub: 'Add products & go live' },
+  const onboardingSteps = [
+    { icon: '📋', label: 'Business Info', sub: 'GSTIN & business type' },
+    { icon: '🏦', label: 'Bank Details', sub: 'Account & IFSC' },
+    { icon: '📍', label: 'Pickup Address', sub: 'Where to collect orders' },
+    { icon: '🚀', label: 'Start Selling', sub: 'Add products & go live' },
   ]
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: f, background: '#F9F9FB' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: f, background: '#F1F5F9' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(124,58,237,0.4) !important; }
+        .top-nav-link:hover { background: rgba(255,255,255,0.12) !important; }
+        .card-shadow { box-shadow: 0 20px 60px rgba(15,10,30,0.12), 0 4px 16px rgba(15,10,30,0.06); }
+      `}</style>
 
-      {/* Left panel */}
-      <div style={{ flex: 1, background: 'linear-gradient(160deg,#7C3AED,#E91E8C)', position: 'relative', overflow: 'hidden', display: 'none' }} className="auth-left">
-        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-        <div style={{ position: 'absolute', bottom: '-60px', left: '-60px', width: '240px', height: '240px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+      {/* ── TOP DARK BANNER ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1A0E21 0%, #4A2040 0%, #8C5374 200%)',
+        padding: '0 52px',
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(ellipse at 25% 50%, rgba(124,58,237,0.2) 0%, transparent 55%), radial-gradient(ellipse at 80% 30%, rgba(233,30,140,0.15) 0%, transparent 50%)' }} />
 
-        <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '28px' }}>🏪</div>
-          <h1 style={{ color: 'white', fontSize: '34px', fontWeight: '800', margin: '0 0 14px', lineHeight: '1.2' }}>
-            Start Selling<br />Today!
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', margin: '0 0 40px', lineHeight: '1.8' }}>
-            Join thousands of sellers on StyleHub and reach millions of fashion-forward buyers.
-          </p>
-
-          {/* Onboarding steps */}
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700', margin: '0 0 20px' }}>After signup, you'll complete:</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {steps.map(({ num, icon, label, sub }) => (
-              <div key={num} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>{icon}</div>
-                <div>
-                  <p style={{ color: 'white', fontWeight: '700', fontSize: '13px', margin: '0 0 2px' }}>{label}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '12px', margin: 0 }}>{sub}</p>
-                </div>
-              </div>
-            ))}
+        {/* Main nav row */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '60px 0' }}>
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#7C3AED,#E91E8C)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(124,58,237,0.4)', flexShrink: 0 }}>
+              <span style={{ fontSize: '22px' }}>🎗️</span>
+            </div>
+            <span style={{ background: 'linear-gradient(90deg,#F472B6,#A78BFA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',fontSize: '23px', fontWeight: '700', letterSpacing: '-0.3px' }}>StyleHub Seller Panel</span>
           </div>
 
           {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '40px' }}>
-            {[['1000+', 'Products Listed'], ['4.8★', 'Seller Rating'], ['₹0', 'Setup Cost'], ['24hr', 'Approval Time']].map(([val, label]) => (
-              <div key={label} style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', borderRadius: '12px', padding: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <p style={{ color: 'white', fontWeight: '800', fontSize: '18px', margin: '0 0 2px' }}>{val}</p>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', margin: 0 }}>{label}</p>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+            {[['2K+', 'Sellers'], ['₹0', 'Setup'], ['4.8★', 'Rating'], ['24hr', 'Approval']].map(([val, label]) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <p style={{ color: 'white', fontWeight: '800', fontSize: '16px', margin: '0 0 1px' }}>{val}</p>
+                <p style={{ color: 'white', fontSize: '12px', margin: 0, fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</p>
               </div>
             ))}
           </div>
+
+          {/* ── TOP-RIGHT NAV LINKS ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/login" className="top-nav-link" style={{
+              color: 'rgba(0,204,255,0.75)', fontSize: '12px', fontWeight: '600',
+              textDecoration: 'none', padding: '7px 14px', borderRadius: '8px',
+              border: '1px solid rgba(124,58,237,0.3)', transition: 'all 0.2s',
+              background: 'rgba(0,204,255,0.08)',
+            }}>
+              Sign In
+            </Link>
+            <Link to="/signup/buyer" className="top-nav-link" style={{
+              color: 'rgba(244,114,182,0.9)', fontSize: '12px', fontWeight: '600',
+              textDecoration: 'none', padding: '7px 14px', borderRadius: '8px',
+              border: '1px solid rgba(233,30,140,0.25)', transition: 'all 0.2s',
+              background: 'rgba(233,30,140,0.08)',
+            }}>
+              🛍️ Buy instead?
+            </Link>
+          </div>
+        </div>
+
+        {/* Onboarding roadmap strip */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '610px', margin: '0 auto', paddingBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', marginRight: '8px' }}>After signup :</span>
+          {onboardingSteps.map(({ icon, label }, i) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '13px' }}>{icon}</span>
+              <span style={{ color: 'white', fontSize: '12px', fontWeight: '500' }}>{label}</span>
+              {i < onboardingSteps.length - 1 && <span style={{ color: 'white', margin: '0 4px', fontSize: '10px' }}>→</span>}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Right panel */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', minHeight: '100vh', overflowY: 'auto' }}>
-        <div style={{ width: '100%', maxWidth: '420px' }}>
+      {/* ── MAIN CONTENT ── */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+        <div className="card-shadow" style={{ width: '100%', maxWidth: '420px', background: 'white', borderRadius: '20px', padding: '36px 32px' }}>
 
           {/* Logo */}
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#7C3AED,#E91E8C)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 8px 20px rgba(124,58,237,0.3)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+            <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#7C3AED,#E91E8C)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 8px 24px rgba(124,58,237,0.3)' }}>
               <span style={{ fontSize: '22px' }}>🏪</span>
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 4px' }}>
-              {step === 1 ? 'Become a Seller' : 'Verify Email'}
+            <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.5px' }}>
+              {step === 1 ? 'Become a Seller' : 'Verify your email'}
             </h2>
-            <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0 }}>
+            <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0, fontWeight: '500' }}>
               {step === 1 ? 'Start selling on StyleHub today' : `OTP sent to ${email}`}
             </p>
           </div>
 
-          {/* Progress */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '28px' }}>
+          {/* Step dots */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '22px' }}>
             {[1, 2].map(s => (
-              <div key={s} style={{ height: '5px', borderRadius: '3px', transition: 'all 0.35s', width: step === s ? '28px' : '8px', background: step >= s ? '#7C3AED' : '#EBEBF0' }} />
+              <div key={s} style={{ height: '4px', borderRadius: '4px', transition: 'all 0.35s', width: step === s ? '32px' : '8px', background: step >= s ? '#7C3AED' : '#E2E8F0' }} />
             ))}
           </div>
 
           {step === 1 ? (
             <form onSubmit={handleSignup}>
-              <div style={{ display: 'grid', gap: '14px' }}>
+              <div style={{ display: 'grid', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B4B6B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Full Name</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Full Name</label>
                   <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                     onFocus={() => setFocused('name')} onBlur={() => setFocused('')}
                     placeholder="Your full name" style={inp('name')} />
                 </div>
-
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B4B6B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Business Email</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Business Email</label>
                   <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                     onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
                     placeholder="business@example.com" style={inp('email')} />
                 </div>
-
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B4B6B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Mobile Number</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Mobile Number</label>
                   <div style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94A3B8', fontWeight: '600', borderRight: '1px solid #EBEBF0', paddingRight: '10px' }}>+91</div>
+                    <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94A3B8', fontWeight: '600', borderRight: '1px solid #E2E8F0', paddingRight: '10px', zIndex: 1 }}>+91</div>
                     <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                       onFocus={() => setFocused('phone')} onBlur={() => setFocused('')}
                       placeholder="10-digit number" maxLength={10}
-                      style={{ ...inp('phone'), paddingLeft: '54px' }} />
+                      style={{ ...inp('phone'), paddingLeft: '58px' }} />
                   </div>
                 </div>
-
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B4B6B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Password</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Password</label>
                   <div style={{ position: 'relative' }}>
                     <input type={showPw ? 'text' : 'password'} value={form.password}
                       onChange={e => setForm({ ...form, password: e.target.value })}
                       onFocus={() => setFocused('pw')} onBlur={() => setFocused('')}
-                      placeholder="Min. 6 characters" style={{ ...inp('pw'), paddingRight: '44px' }} />
+                      placeholder="Min. 6 characters" style={{ ...inp('pw'), paddingRight: '48px' }} />
                     <button type="button" onClick={() => setShowPw(!showPw)}
                       style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px' }}>
                       {showPw ? '🙈' : '👁️'}
                     </button>
                   </div>
                 </div>
-
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B4B6B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Confirm Password</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Confirm Password</label>
                   <input type="password" value={form.confirmPassword}
                     onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
                     onFocus={() => setFocused('cpw')} onBlur={() => setFocused('')}
                     placeholder="Repeat password" style={inp('cpw')} />
                   {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p style={{ fontSize: '11px', color: '#DC2626', margin: '4px 0 0' }}>Passwords don't match</p>
+                    <p style={{ fontSize: '11px', color: '#DC2626', margin: '4px 0 0', fontWeight: '500' }}>⚠ Passwords don't match</p>
                   )}
                 </div>
 
-                <button type="submit" disabled={loading}
-                  style={{ width: '100%', padding: '14px', background: loading ? '#E9D5FF' : 'linear-gradient(135deg,#7C3AED,#E91E8C)', color: loading ? '#A78BFA' : 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: f, boxShadow: loading ? 'none' : '0 6px 20px rgba(124,58,237,0.3)', transition: 'all 0.2s', marginTop: '4px' }}>
+                <button type="submit" disabled={loading} className="submit-btn"
+                  style={{ width: '100%', padding: '13px', background: loading ? '#EDE9FE' : 'linear-gradient(135deg,#7C3AED 0%,#E91E8C 100%)', color: loading ? '#A78BFA' : 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: f, boxShadow: loading ? 'none' : '0 6px 20px rgba(124,58,237,0.3)', transition: 'all 0.2s', marginTop: '2px' }}>
                   {loading ? 'Creating Account...' : 'Create Seller Account →'}
                 </button>
-              </div>
-
-              {/* What happens next (mobile) */}
-              <div style={{ marginTop: '20px', background: 'linear-gradient(135deg,#F5F0FF,#FDF0F8)', border: '1px solid #DDD6FE', borderRadius: '14px', padding: '16px' }} className="auth-left-hide">
-                <p style={{ fontSize: '11px', fontWeight: '700', color: '#7C3AED', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>After signup you'll complete:</p>
-                {steps.map(({ icon, label, sub }) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '16px' }}>{icon}</span>
-                    <div>
-                      <p style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A2E', margin: 0 }}>{label}</p>
-                      <p style={{ fontSize: '11px', color: '#94A3B8', margin: 0 }}>{sub}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP}>
-              <div style={{ background: 'linear-gradient(135deg,#F5F0FF,#FDF0F8)', border: '1.5px dashed #7C3AED', borderRadius: '14px', padding: '20px', textAlign: 'center', marginBottom: '24px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📧</div>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 6px' }}>Enter the 6-digit OTP sent to</p>
-                <p style={{ fontSize: '14px', fontWeight: '700', color: '#7C3AED', margin: '0 0 8px' }}>{email}</p>
-                <p style={{ fontSize: '11px', color: '#94A3B8', margin: 0, background: '#FFF', padding: '4px 12px', borderRadius: '20px', display: 'inline-block', fontWeight: '600' }}>Dev mode: use 123456</p>
+              <div style={{ background: 'linear-gradient(135deg,#F5F0FF,#FDF0F8)', border: '1.5px dashed #7C3AED', borderRadius: '12px', padding: '18px', textAlign: 'center', marginBottom: '20px' }}>
+                <div style={{ fontSize: '32px', marginBottom: '6px' }}>📧</div>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 3px', fontWeight: '500' }}>We sent a 6-digit code to</p>
+                <p style={{ fontSize: '14px', fontWeight: '700', color: '#7C3AED', margin: '0 0 6px' }}>{email}</p>
+                <span style={{ fontSize: '11px', color: '#94A3B8', background: 'white', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>Dev mode: use 123456</span>
               </div>
 
-              {/* OTP visual boxes */}
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '14px' }}>
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} style={{ width: '44px', height: '52px', border: `2px solid ${otp[i] ? '#7C3AED' : '#EBEBF0'}`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: '#1A1A2E', background: otp[i] ? '#F5F0FF' : 'white', transition: 'all 0.2s' }}>
+                  <div key={i} style={{
+                    width: '44px', height: '50px',
+                    border: `2px solid ${otp[i] ? '#7C3AED' : '#E2E8F0'}`,
+                    borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '18px', fontWeight: '800', color: '#0F172A',
+                    background: otp[i] ? '#F5F0FF' : 'white',
+                    boxShadow: otp[i] ? '0 0 0 3px rgba(124,58,237,0.1)' : 'none',
+                    transition: 'all 0.2s',
+                  }}>
                     {otp[i] || ''}
                   </div>
                 ))}
@@ -219,36 +241,63 @@ export default function SellerSignupPage() {
 
               <input value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6} placeholder="Enter 6-digit OTP"
-                style={{ width: '100%', padding: '12px 16px', border: `1.5px solid ${focused === 'otp' ? '#7C3AED' : '#EBEBF0'}`, borderRadius: '12px', fontSize: '14px', outline: 'none', fontFamily: f, boxSizing: 'border-box', textAlign: 'center', letterSpacing: '8px', fontWeight: '700', background: focused === 'otp' ? '#F5F0FF' : 'white', marginBottom: '16px' }}
-                onFocus={() => setFocused('otp')} onBlur={() => setFocused('')} />
+                onFocus={() => setFocused('otp')} onBlur={() => setFocused('')}
+                style={{
+                  width: '100%', padding: '12px 16px',
+                  border: `1.5px solid ${focused === 'otp' ? '#7C3AED' : '#E2E8F0'}`,
+                  borderRadius: '10px', fontSize: '20px', outline: 'none', fontFamily: f,
+                  boxSizing: 'border-box', textAlign: 'center', letterSpacing: '10px', fontWeight: '800',
+                  background: focused === 'otp' ? '#F5F0FF' : '#FAFAFA', marginBottom: '14px',
+                  boxShadow: focused === 'otp' ? '0 0 0 4px rgba(124,58,237,0.08)' : 'none', transition: 'all 0.2s',
+                }} />
 
-              <button type="submit" disabled={loading || otp.length !== 6}
-                style={{ width: '100%', padding: '14px', background: otp.length === 6 ? 'linear-gradient(135deg,#7C3AED,#E91E8C)' : '#F1F5F9', color: otp.length === 6 ? 'white' : '#94A3B8', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: '700', cursor: otp.length === 6 ? 'pointer' : 'not-allowed', fontFamily: f, boxShadow: otp.length === 6 ? '0 6px 20px rgba(124,58,237,0.3)' : 'none', transition: 'all 0.2s' }}>
+              <button type="submit" disabled={loading || otp.length !== 6} className="submit-btn"
+                style={{ width: '100%', padding: '13px', background: otp.length === 6 ? 'linear-gradient(135deg,#7C3AED,#E91E8C)' : '#F1F5F9', color: otp.length === 6 ? 'white' : '#94A3B8', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: otp.length === 6 ? 'pointer' : 'not-allowed', fontFamily: f, boxShadow: otp.length === 6 ? '0 6px 20px rgba(124,58,237,0.3)' : 'none', transition: 'all 0.2s' }}>
                 {loading ? 'Verifying...' : 'Verify & Start Selling ✓'}
               </button>
 
               <button type="button" onClick={() => setStep(1)}
-                style={{ width: '100%', padding: '12px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '13px', cursor: 'pointer', marginTop: '8px', fontFamily: f, fontWeight: '500' }}>
+                style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '13px', cursor: 'pointer', marginTop: '6px', fontFamily: f, fontWeight: '600' }}>
                 ← Back to form
               </button>
             </form>
           )}
 
-          <p style={{ textAlign: 'center', fontSize: '13px', color: '#94A3B8', marginTop: '20px' }}>
-            Already a seller?{' '}
-            <Link to="/login" style={{ color: '#7C3AED', fontWeight: '700', textDecoration: 'none' }}>Sign In</Link>
-            {' · '}
-            <Link to="/signup/buyer" style={{ color: '#E91E8C', fontWeight: '700', textDecoration: 'none' }}>Buy instead?</Link>
-          </p>
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <button
+              onClick={() => navigate('/home')}
+              style={{
+                background: 'none', border: 'none', color: '#94A3B8',
+                fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: f,
+                display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px',
+                borderRadius: '8px', transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#7C3AED'; e.currentTarget.style.background = '#F5F0FF'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'none'; }}
+            >
+              ← Back to Home
+            </button>
+          </div>
         </div>
       </div>
 
-      <style>{`
-        @media (min-width: 900px) {
-          .auth-left { display: flex !important; flex-direction: column; }
-          .auth-left-hide { display: none !important; }
-        }
-      `}</style>
+      {/* ── BOTTOM DARK BANNER ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0A0A1A 0%, #0D0A2E 40%, #1E1060 100%)',
+        padding: '14px 32px',
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(ellipse at 80% 50%, rgba(124,58,237,0.1) 0%, transparent 50%)' }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: '500' }}>© 2025 StyleHub. All rights reserved.</span>
+          <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '12px' }}>·</span>
+          <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: '500', textDecoration: 'none' }}>Privacy</Link>
+          <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '12px' }}>·</span>
+          <Link to="/terms" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: '500', textDecoration: 'none' }}>Terms</Link>
+        </div>
+      </div>
     </div>
   )
 }

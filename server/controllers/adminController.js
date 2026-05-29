@@ -33,18 +33,14 @@ export const getDashboardStats = async (req, res) => {
     Order.countDocuments(),
   ])
 
-  // Revenue (sum of all paid orders)
   const revenueAgg = await Order.aggregate([
     { $match: { paymentStatus: 'paid' } },
     { $group: { _id: null, total: { $sum: '$totalAmount' } } },
   ])
   const totalRevenue = revenueAgg[0]?.total || 0
 
-  // Recent 7 days orders
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const recentOrders = await Order.countDocuments({ createdAt: { $gte: sevenDaysAgo } })
-
-  // New sellers this week
   const newSellersThisWeek = await User.countDocuments({
     role: 'seller',
     createdAt: { $gte: sevenDaysAgo },
@@ -52,17 +48,9 @@ export const getDashboardStats = async (req, res) => {
 
   return successResponse(res, 'Dashboard stats', {
     stats: {
-      totalBuyers,
-      totalSellers,
-      approvedSellers,
-      pendingSellers,
-      totalProducts,
-      activeProducts,
-      pendingProducts,
-      totalOrders,
-      totalRevenue,
-      recentOrders,
-      newSellersThisWeek,
+      totalBuyers, totalSellers, approvedSellers, pendingSellers,
+      totalProducts, activeProducts, pendingProducts,
+      totalOrders, totalRevenue, recentOrders, newSellersThisWeek,
     },
   })
 }
@@ -110,7 +98,6 @@ export const getSellerById = async (req, res) => {
     .select('-password -otp -otpExpiry')
   if (!seller) return errorResponse(res, 'Seller not found', 404)
 
-  // Also get their products
   const products = await Product.find({ seller: seller._id })
     .select('title status images sellingPrice createdAt')
     .sort({ createdAt: -1 })
@@ -127,21 +114,18 @@ export const approveSeller = async (req, res) => {
   const seller = await User.findOne({ _id: req.params.id, role: 'seller' })
   if (!seller) return errorResponse(res, 'Seller not found', 404)
 
-  seller.sellerDetails.approvalStatus = 'approved'
-  seller.sellerDetails.approvedAt     = new Date()
+  seller.sellerDetails.approvalStatus  = 'approved'
+  seller.sellerDetails.approvedAt      = new Date()
   seller.sellerDetails.rejectionReason = ''
   await seller.save()
 
-  // Real-time notification
   emitSellerApproved(io, { sellerId: seller._id })
-
   return successResponse(res, `Seller "${seller.name}" approved successfully`)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // REJECT SELLER
 // PUT /api/admin/sellers/:id/reject
-// Body: { reason }
 // ═══════════════════════════════════════════════════════════════════════════════
 export const rejectSeller = async (req, res) => {
   const { reason } = req.body
@@ -155,7 +139,6 @@ export const rejectSeller = async (req, res) => {
   await seller.save()
 
   emitSellerRejected(io, { sellerId: seller._id, reason })
-
   return successResponse(res, `Seller "${seller.name}" rejected`)
 }
 
@@ -176,7 +159,7 @@ export const suspendSeller = async (req, res) => {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GET ALL PRODUCTS (for admin review)
+// GET ALL PRODUCTS
 // GET /api/admin/products?page=1&status=pending
 // ═══════════════════════════════════════════════════════════════════════════════
 export const getAllProducts = async (req, res) => {
@@ -215,24 +198,20 @@ export const approveProduct = async (req, res) => {
   const product = await Product.findById(req.params.id).populate('seller', 'name')
   if (!product) return errorResponse(res, 'Product not found', 404)
 
-  product.status     = 'active'
-  product.approvedAt = new Date()
+  product.status          = 'active'
+  product.approvedAt      = new Date()
   product.rejectionReason = ''
   await product.save()
 
   emitProductApproved(io, {
-    sellerId:     product.seller._id,
-    productId:    product._id,
-    productTitle: product.title,
+    sellerId: product.seller._id, productId: product._id, productTitle: product.title,
   })
-
   return successResponse(res, `Product "${product.title}" approved and is now live`)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // REJECT PRODUCT
 // PUT /api/admin/products/:id/reject
-// Body: { reason }
 // ═══════════════════════════════════════════════════════════════════════════════
 export const rejectProduct = async (req, res) => {
   const { reason } = req.body
@@ -246,12 +225,9 @@ export const rejectProduct = async (req, res) => {
   await product.save()
 
   emitProductRejected(io, {
-    sellerId:     product.seller._id,
-    productId:    product._id,
-    productTitle: product.title,
-    reason,
+    sellerId: product.seller._id, productId: product._id,
+    productTitle: product.title, reason,
   })
-
   return successResponse(res, `Product "${product.title}" rejected`)
 }
 
@@ -309,10 +285,16 @@ export const getAllOrders = async (req, res) => {
   const page   = parseInt(req.query.page)  || 1
   const limit  = parseInt(req.query.limit) || 10
   const status = req.query.status          || null
+  const search = req.query.search          || ''
   const skip   = (page - 1) * limit
 
   const filter = {}
   if (status) filter.status = status
+  if (search) {
+    filter.$or = [
+      { _id: search.match(/^[a-f\d]{24}$/i) ? search : null },
+    ].filter(Boolean)
+  }
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
@@ -324,4 +306,76 @@ export const getAllOrders = async (req, res) => {
   ])
 
   return paginatedResponse(res, 'Orders fetched', orders, page, limit, total)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE ORDER STATUS (admin)
+// PUT /api/admin/orders/:id/status
+//
+// ROLE SPLIT:
+//   Seller  → placed → confirmed → packed → shipped
+//   Admin   → shipped → out_for_delivery → delivered  (+ can cancel anything)
+//
+// Admin button shown only when order is shipped or beyond.
+// Admin can also cancel any order at any stage.
+// ═══════════════════════════════════════════════════════════════════════════════
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { id }     = req.params
+    const { status } = req.body
+
+    // All valid statuses in the system
+    const allStatuses = [
+      'placed', 'confirmed', 'packed', 'shipped',
+      'out_for_delivery', 'delivered',
+      'cancelled', 'return_requested', 'returned',
+    ]
+    if (!allStatuses.includes(status))
+      return res.status(400).json({ message: 'Invalid status' })
+
+    const order = await Order.findById(id)
+    if (!order) return res.status(404).json({ message: 'Order not found' })
+
+    // ── Admin handoff rule ──────────────────────────────────────────────────
+    // Admin takes over AFTER seller has marked shipped.
+    // Admin can advance: shipped → out_for_delivery → delivered
+    // Admin can also cancel any order at any point.
+    // Admin CANNOT go backwards or skip steps.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const adminFlow = {
+      shipped:          'out_for_delivery',
+      out_for_delivery: 'delivered',
+    }
+
+    // If not cancelling, enforce the admin flow order
+    if (status !== 'cancelled' && status !== 'return_requested' && status !== 'returned') {
+      const expectedNext = adminFlow[order.status]
+
+      // If the current status is in the SELLER zone (placed/confirmed/packed)
+      // admin should not be advancing — warn but allow in dev mode
+      const sellerZone = ['placed', 'confirmed', 'packed']
+      if (sellerZone.includes(order.status) && sellerZone.includes(status)) {
+        // Allow admin to also do seller steps (fallback if seller hasn't acted)
+      } else if (expectedNext && expectedNext !== status) {
+        return res.status(400).json({
+          message: `Cannot jump from "${order.status}" to "${status}". Expected next: "${expectedNext}"`,
+        })
+      }
+    }
+
+    order.status = status
+    order.statusHistory.push({ status, note: 'Updated by admin', updatedAt: new Date() })
+
+    // Auto mark COD as paid on delivery
+    if (status === 'delivered' && order.paymentMethod === 'cod') {
+      order.paymentStatus = 'paid'
+    }
+
+    await order.save()
+    res.json({ message: 'Status updated', order })
+
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 }

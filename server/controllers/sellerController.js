@@ -1,5 +1,6 @@
 import User            from '../models/User.js'
 import Product         from '../models/Product.js'
+import Order           from '../models/Order.js'
 import Category        from '../models/Category.js'
 import cloudinary      from '../config/cloudinary.js'
 import { successResponse, errorResponse, paginatedResponse } from '../utils/responseHelper.js'
@@ -34,16 +35,14 @@ export const saveGSTIN = async (req, res) => {
   const { gstin, pan } = req.body
   if (!gstin) return errorResponse(res, 'GSTIN is required')
 
-  // Basic GSTIN format: 15 chars alphanumeric
   const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
   if (!gstinRegex.test(gstin.toUpperCase()))
     return errorResponse(res, 'Invalid GSTIN format. Example: 27AAPFU0939F1ZV')
 
   const user = await User.findById(req.user._id)
 
-  // Handle uploaded GST certificate
   let gstCertUrl = user.sellerDetails.gstCertUrl
-  if (req.file) gstCertUrl = req.file.path   // Cloudinary URL
+  if (req.file) gstCertUrl = req.file.path
 
   user.sellerDetails.gstin           = gstin.toUpperCase().trim()
   user.sellerDetails.pan             = pan?.toUpperCase().trim() || ''
@@ -64,7 +63,6 @@ export const saveBankDetails = async (req, res) => {
   if (!bankName || !accountHolder || !accountNumber || !ifscCode)
     return errorResponse(res, 'All bank fields are required')
 
-  // IFSC format: 4 letters + 0 + 6 alphanumeric
   const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
   if (!ifscRegex.test(ifscCode.toUpperCase()))
     return errorResponse(res, 'Invalid IFSC code. Example: SBIN0001234')
@@ -119,7 +117,7 @@ export const savePickupAddress = async (req, res) => {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GET SELLER PROFILE (onboarding status + details)
+// GET SELLER PROFILE
 // GET /api/seller/profile
 // ═══════════════════════════════════════════════════════════════════════════════
 export const getSellerProfile = async (req, res) => {
@@ -128,7 +126,7 @@ export const getSellerProfile = async (req, res) => {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// UPDATE SELLER PROFILE (name, phone, profilePhoto)
+// UPDATE SELLER PROFILE
 // PUT /api/seller/profile
 // ═══════════════════════════════════════════════════════════════════════════════
 export const updateSellerProfile = async (req, res) => {
@@ -148,24 +146,19 @@ export const updateSellerProfile = async (req, res) => {
 // POST /api/seller/products
 // ═══════════════════════════════════════════════════════════════════════════════
 export const addProduct = async (req, res) => {
-  // Check seller is approved
   const seller = await User.findById(req.user._id)
   if (seller.sellerDetails.approvalStatus !== 'approved')
     return errorResponse(res, 'Your seller account must be approved before listing products', 403)
 
   const {
-    title, description, brand, category, subCategory,
+    title, description, brand,
+    category, itemType, subItemType, itemName,
     mrp, sellingPrice, gstPercent, tags, weight,
-    variants,   // JSON string: [{ size, color, stock, sku }]
+    variants, additionalDetails,
   } = req.body
 
-  // Validation
-  if (!title || !description || !category || !subCategory || !mrp || !sellingPrice)
-    return errorResponse(res, 'title, description, category, subCategory, mrp, sellingPrice are required')
-
-  // ✅ Fixed: allow all valid categories
-  if (!VALID_CATEGORIES.includes(category))
-    return errorResponse(res, `Category must be one of: ${VALID_CATEGORIES.join(', ')}`)
+  if (!title || !description || !category || !itemType || !subItemType || !itemName || !mrp || !sellingPrice)
+    return errorResponse(res, 'title, description, category, itemType, subItemType, itemName, mrp, sellingPrice are required')
 
   if (Number(sellingPrice) > Number(mrp))
     return errorResponse(res, 'Selling price cannot be more than MRP')
@@ -173,7 +166,6 @@ export const addProduct = async (req, res) => {
   if (!req.files || req.files.length === 0)
     return errorResponse(res, 'At least 1 product image is required')
 
-  // Parse variants
   let parsedVariants = []
   try {
     parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants || []
@@ -184,30 +176,36 @@ export const addProduct = async (req, res) => {
   if (parsedVariants.length === 0)
     return errorResponse(res, 'At least one size/stock variant is required')
 
-  // Image URLs from Cloudinary
-  const images = req.files.map((f) => `http://localhost:5000/uploads/${f.filename}`)
+  let parsedAdditional = {}
+  try {
+    parsedAdditional = typeof additionalDetails === 'string' ? JSON.parse(additionalDetails) : additionalDetails || {}
+  } catch { parsedAdditional = {} }
 
-  // Parse tags
   let parsedTags = []
   try {
     parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags || []
   } catch { parsedTags = [] }
 
+  const images = req.files.map((f) => `http://localhost:5000/uploads/${f.filename}`)
+
   const product = await Product.create({
-    seller:       req.user._id,
-    title:        title.trim(),
-    description:  description.trim(),
-    brand:        brand?.trim() || '',
+    seller:            req.user._id,
+    title:             title.trim(),
+    description:       description.trim(),
+    brand:             brand?.trim() || '',
     category,
-    subCategory:  subCategory.trim(),
-    mrp:          Number(mrp),
-    sellingPrice: Number(sellingPrice),
-    gstPercent:   Number(gstPercent) || 5,
-    tags:         parsedTags,
-    weight:       Number(weight) || 0.5,
+    itemType,
+    subItemType,
+    itemName,
+    mrp:               Number(mrp),
+    sellingPrice:      Number(sellingPrice),
+    gstPercent:        Number(gstPercent) || 5,
+    tags:              parsedTags,
+    weight:            Number(weight) || 0.5,
     images,
-    variants:     parsedVariants,
-    status:       'pending',
+    variants:          parsedVariants,
+    additionalDetails: parsedAdditional,
+    status:            'pending',
   })
 
   return successResponse(res, 'Product added! Awaiting admin approval.', { product }, 201)
@@ -275,16 +273,13 @@ export const updateProduct = async (req, res) => {
     try { product.variants = typeof variants === 'string' ? JSON.parse(variants) : variants } catch { }
   }
 
-  // Handle new images
   if (req.files && req.files.length > 0) {
     const newImages = req.files.map((f) => `http://localhost:5000/uploads/${f.filename}`)
-    // keepImages: existing image URLs to keep
     let kept = []
     try { kept = keepImages ? JSON.parse(keepImages) : [] } catch { kept = [] }
     product.images = [...kept, ...newImages].slice(0, 8)
   }
 
-  // Re-submit for approval if price/description changed
   product.status = 'pending'
   await product.save()
 
@@ -312,12 +307,7 @@ export const deleteProduct = async (req, res) => {
 export const getDashboardStats = async (req, res) => {
   const sellerId = req.user._id
 
-  const [
-    totalProducts,
-    activeProducts,
-    pendingProducts,
-    rejectedProducts,
-  ] = await Promise.all([
+  const [totalProducts, activeProducts, pendingProducts, rejectedProducts] = await Promise.all([
     Product.countDocuments({ seller: sellerId }),
     Product.countDocuments({ seller: sellerId, status: 'active' }),
     Product.countDocuments({ seller: sellerId, status: 'pending' }),
@@ -325,20 +315,144 @@ export const getDashboardStats = async (req, res) => {
   ])
 
   return successResponse(res, 'Dashboard stats', {
-    stats: {
-      totalProducts,
-      activeProducts,
-      pendingProducts,
-      rejectedProducts,
-    },
+    stats: { totalProducts, activeProducts, pendingProducts, rejectedProducts },
   })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GET ALL CATEGORIES (for product form dropdowns)
+// GET ALL CATEGORIES
 // GET /api/seller/categories
 // ═══════════════════════════════════════════════════════════════════════════════
 export const getCategories = async (req, res) => {
   const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1 })
   return successResponse(res, 'Categories fetched', { categories })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET SELLER ORDERS
+// GET /api/seller/orders?page=1&limit=20&status=placed&search=name
+// ═══════════════════════════════════════════════════════════════════════════════
+export const getSellerOrders = async (req, res) => {
+  const page   = parseInt(req.query.page)  || 1
+  const limit  = parseInt(req.query.limit) || 20
+  const skip   = (page - 1) * limit
+  const status = req.query.status || null
+  const search = req.query.search || null
+
+  const filter = { 'items.seller': req.user._id }
+  if (status) filter.status = status
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate('buyer', 'name email phone')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Order.countDocuments(filter),
+  ])
+
+  // Filter items in each order to only show THIS seller's items
+  const sellerOrders = orders.map(order => {
+    const obj = order.toObject()
+    obj.items = obj.items.filter(item =>
+      item.seller?.toString() === req.user._id.toString()
+    )
+    return obj
+  })
+
+  // If search, filter by buyer name or order id
+  let result = sellerOrders
+  if (search) {
+    const q = search.toLowerCase()
+    result = sellerOrders.filter(o =>
+      (o.buyer?.name || '').toLowerCase().includes(q) ||
+      (o.orderNumber || o._id?.toString() || '').toLowerCase().includes(q)
+    )
+  }
+
+  return successResponse(res, 'Orders fetched', { orders: result, total })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE ORDER STATUS (Seller side — up to shipped only)
+// PUT /api/seller/orders/:orderId/status
+// ═══════════════════════════════════════════════════════════════════════════════
+export const updateSellerOrderStatus = async (req, res) => {
+  const { status } = req.body
+
+  const allowed = ['confirmed', 'packed', 'shipped', 'cancelled']
+  if (!allowed.includes(status))
+    return errorResponse(res, `Sellers can only update to: ${allowed.join(', ')}`)
+
+  const order = await Order.findOne({
+    _id: req.params.orderId,
+    'items.seller': req.user._id,
+  })
+  if (!order) return errorResponse(res, 'Order not found', 404)
+
+  const sellerFlow = { placed: 'confirmed', confirmed: 'packed', packed: 'shipped' }
+  if (status !== 'cancelled' && sellerFlow[order.status] !== status)
+    return errorResponse(res, `Cannot jump from ${order.status} to ${status}`)
+
+  order.status = status
+  order.statusHistory.push({ status, note: 'Updated by seller' })
+  await order.save()
+
+  return successResponse(res, 'Order status updated', { order })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET SELLER ORDER STATS  ← NEW
+// GET /api/seller/stats
+// Returns real DB counts — never affected by tab / search / page filters
+// Used by SellerOrdersPage stat cards so numbers stay correct on tab switch
+// ═══════════════════════════════════════════════════════════════════════════════
+export const getSellerStats = async (req, res) => {
+  try {
+    const sellerId = req.user._id
+
+    const [
+      total,
+      placed,
+      confirmed,
+      packed,
+      shipped,
+      out_for_delivery,
+      delivered,
+      cancelled,
+      revenueAgg,
+    ] = await Promise.all([
+      Order.countDocuments({ 'items.seller': sellerId }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'placed' }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'confirmed' }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'packed' }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'shipped' }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'out_for_delivery' }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'delivered' }),
+      Order.countDocuments({ 'items.seller': sellerId, status: 'cancelled' }),
+      Order.aggregate([
+        {
+          $match: {
+            'items.seller': sellerId,
+            status: { $nin: ['cancelled', 'returned'] },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+    ])
+
+    return successResponse(res, 'Stats fetched', {
+      total,
+      placed,
+      confirmed,
+      packed,
+      shipped,
+      out_for_delivery,
+      delivered,
+      cancelled,
+      revenue: revenueAgg[0]?.total || 0,
+    })
+  } catch (err) {
+    return errorResponse(res, err.message, 500)
+  }
 }

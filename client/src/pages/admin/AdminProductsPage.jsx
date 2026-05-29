@@ -17,19 +17,38 @@ const CAT_STYLE = {
   kids:  { bg: '#FFF7ED', color: '#C2410C' },
 }
 const TABS = [
-  { key: 'pending',  label: '⏳ Pending'  },
   { key: '',         label: 'All'          },
+  { key: 'pending',  label: '⏳ Pending'  },
   { key: 'active',   label: '✅ Active'    },
   { key: 'rejected', label: '❌ Rejected'  },
 ]
 
 const f = 'Poppins, sans-serif'
 
+const resolveName = (field) => {
+  if (!field) return '—'
+  if (typeof field === 'object' && field.name) return field.name
+  return '—'
+}
+
+const buildCategoryPath = (product) => {
+  const parts = [
+    resolveName(product.category),
+    resolveName(product.itemType),
+    resolveName(product.subItemType),
+    resolveName(product.itemName),
+  ].filter(p => p !== '—')
+  return parts.length ? parts.join(' › ') : '—'
+}
+
+const formatKey = (key) =>
+  key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim()
+
 export default function AdminProductsPage() {
   const [sideOpen,    setSideOpen]    = useState(false)
   const [products,    setProducts]    = useState([])
   const [loading,     setLoading]     = useState(true)
-  const [status,      setStatus]      = useState('pending')
+  const [status,      setStatus]      = useState('')          // ← changed from 'pending' to ''
   const [search,      setSearch]      = useState('')
   const [page,        setPage]        = useState(1)
   const [total,       setTotal]       = useState(0)
@@ -81,13 +100,13 @@ export default function AdminProductsPage() {
         {/* Header */}
         <header style={{ background: 'white', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #EBEBF0', position: 'sticky', top: 0, zIndex: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => setSideOpen(true)} style={{ background: '#F9F9FB', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex' }} className="lg:hidden">☰</button>
+            <button onClick={() => setSideOpen(true)} style={{ background: '#F9F9FB', border: 'none', padding: '8px 10px', borderRadius: '0px', cursor: 'pointer', fontSize: '16px', display: 'flex' }} className="lg:hidden">☰</button>
             <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#1A1A2E', margin: 0, fontFamily: f }}>Products</h1>
-            <span style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: '600' }}>{total} total</span>
+            <span style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 12px', borderRadius: '000px', fontSize: '11px', fontWeight: '600' }}>{total} total</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <NotificationBell />
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700' }}>AD</div>
+            <div style={{ width: '36px', height: '36px', borderRadius: '0%', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700' }}>AD</div>
           </div>
         </header>
 
@@ -99,9 +118,9 @@ export default function AdminProductsPage() {
               <FiSearch style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#C0C0D0' }} size={15} />
               <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search products..."
-                style={{ width: '100%', padding: '10px 14px 10px 40px', border: '1px solid #EBEBF0', borderRadius: '12px', fontSize: '13px', fontFamily: f, background: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px 10px 40px', border: '1px solid #EBEBF0', borderRadius: '0px', fontSize: '13px', fontFamily: f, background: 'white', outline: 'none', boxSizing: 'border-box' }} />
             </div>
-            <button onClick={fetchProducts} style={{ width: '42px', height: '42px', border: '1px solid #EBEBF0', borderRadius: '12px', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
+            <button onClick={fetchProducts} style={{ width: '42px', height: '42px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
               <FiRefreshCw size={15} />
             </button>
           </div>
@@ -110,7 +129,7 @@ export default function AdminProductsPage() {
           <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
             {TABS.map(tab => (
               <button key={tab.key} onClick={() => { setStatus(tab.key); setPage(1) }}
-                style={{ padding: '8px 18px', borderRadius: '999px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: f, transition: 'all 0.2s',
+                style={{ padding: '8px 18px', borderRadius: '000px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: f, transition: 'all 0.2s',
                   background: status === tab.key ? 'linear-gradient(135deg,#E91E8C,#7C3AED)' : 'white',
                   color: status === tab.key ? 'white' : '#6B7280',
                   boxShadow: status === tab.key ? '0 4px 12px rgba(233,30,140,0.25)' : '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -123,11 +142,11 @@ export default function AdminProductsPage() {
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
               {Array(8).fill(0).map((_, i) => (
-                <div key={i} style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #EBEBF0' }}>
+                <div key={i} style={{ background: 'white', borderRadius: '0px', overflow: 'hidden', border: '1px solid #EBEBF0' }}>
                   <div style={{ height: '200px', background: '#F1F5F9' }} />
                   <div style={{ padding: '14px' }}>
-                    <div style={{ height: '12px', background: '#F1F5F9', borderRadius: '6px', width: '80%', marginBottom: '8px' }} />
-                    <div style={{ height: '12px', background: '#F1F5F9', borderRadius: '6px', width: '50%' }} />
+                    <div style={{ height: '12px', background: '#F1F5F9', borderRadius: '0px', width: '80%', marginBottom: '8px' }} />
+                    <div style={{ height: '12px', background: '#F1F5F9', borderRadius: '0px', width: '50%' }} />
                   </div>
                 </div>
               ))}
@@ -142,13 +161,14 @@ export default function AdminProductsPage() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
                 {products.map(product => {
-                  const sc = STATUS_STYLE[product.status] || STATUS_STYLE.pending
-                  const cc = CAT_STYLE[product.category] || { bg: '#F1F5F9', color: '#64748B' }
+                  const sc   = STATUS_STYLE[product.status] || STATUS_STYLE.pending
+                  const catName = resolveName(product.category)
+                  const cc   = CAT_STYLE[catName?.toLowerCase()] || { bg: '#F1F5F9', color: '#64748B' }
                   const disc = product.mrp > product.sellingPrice ? Math.round(((product.mrp - product.sellingPrice) / product.mrp) * 100) : 0
                   return (
                     <div key={product._id}
                       onClick={() => { setSelected(product); setImgIdx(0) }}
-                      style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #EBEBF0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}
+                      style={{ background: 'white', borderRadius: '0px', overflow: 'hidden', border: '1px solid #EBEBF0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }}
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(233,30,140,0.12)' }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)' }}>
                       <div style={{ position: 'relative' }}>
@@ -164,20 +184,20 @@ export default function AdminProductsPage() {
                           {disc > 0 && <span style={{ fontSize: '11px', color: '#94A3B8', textDecoration: 'line-through' }}>₹{product.mrp}</span>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px' }}>
-                          <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', fontWeight: '700', background: cc.bg, color: cc.color, textTransform: 'capitalize' }}>{product.category}</span>
+                          <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', fontWeight: '700', background: cc.bg, color: cc.color, textTransform: 'capitalize' }}>{catName}</span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10px', padding: '3px 8px', borderRadius: '20px', fontWeight: '700', background: sc.bg, color: sc.color }}>
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: sc.dot }} />{product.status}
+                            <span style={{ width: '5px', height: '5px', borderRadius: '0%', background: sc.dot }} />{product.status}
                           </span>
                         </div>
                         {product.seller && <p style={{ fontSize: '10px', color: '#94A3B8', margin: '6px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>by {product.seller?.sellerDetails?.businessName || product.seller?.name}</p>}
                         {product.status === 'pending' && (
                           <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }} onClick={e => e.stopPropagation()}>
                             <button onClick={() => handleApprove(product._id)} disabled={actionLoad}
-                              style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '11px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                              style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '700', fontSize: '11px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                               <FiCheck size={11} /> Approve
                             </button>
                             <button onClick={() => setRejectModal({ productId: product._id, productTitle: product.title })}
-                              style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg,#f43f5e,#be123c)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '11px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                              style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg,#f43f5e,#be123c)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '700', fontSize: '11px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                               <FiX size={11} /> Reject
                             </button>
                           </div>
@@ -191,10 +211,10 @@ export default function AdminProductsPage() {
               {totalPages > 1 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '24px' }}>
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: '8px 18px', border: '1px solid #EBEBF0', borderRadius: '10px', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, fontFamily: f, fontSize: '13px', fontWeight: '600' }}>← Prev</button>
+                    style={{ padding: '8px 18px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, fontFamily: f, fontSize: '13px', fontWeight: '600' }}>← Prev</button>
                   <span style={{ fontSize: '13px', color: '#4B4B6B', fontWeight: '600' }}>Page {page} / {totalPages}</span>
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: '8px 18px', border: '1px solid #EBEBF0', borderRadius: '10px', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, fontFamily: f, fontSize: '13px', fontWeight: '600' }}>Next →</button>
+                    style={{ padding: '8px 18px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, fontFamily: f, fontSize: '13px', fontWeight: '600' }}>Next →</button>
                 </div>
               )}
             </>
@@ -205,20 +225,20 @@ export default function AdminProductsPage() {
       {/* Product Detail Modal */}
       {selected && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setSelected(null)}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '580px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: 'white', borderRadius: '0px', width: '100%', maxWidth: '580px', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #EBEBF0' }}>
               <h2 style={{ fontSize: '17px', fontWeight: '700', color: '#1A1A2E', margin: 0, fontFamily: f }}>Product Review</h2>
-              <button onClick={() => setSelected(null)} style={{ background: '#F1F5F9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: '16px' }}>✕</button>
+              <button onClick={() => setSelected(null)} style={{ background: '#F1F5F9', border: 'none', width: '32px', height: '32px', borderRadius: '0%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: '16px' }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px' }}>
               {selected.images?.length > 0 && (
                 <div style={{ marginBottom: '18px' }}>
-                  <img src={selected.images[imgIdx]} alt="" style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '14px', background: '#F1F5F9', display: 'block' }} />
+                  <img src={selected.images[imgIdx]} alt="" style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '0px', background: '#F1F5F9', display: 'block' }} />
                   {selected.images.length > 1 && (
                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px', overflowX: 'auto' }}>
                       {selected.images.map((img, i) => (
                         <button key={i} onClick={() => setImgIdx(i)}
-                          style={{ flexShrink: 0, width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', border: `2px solid ${imgIdx === i ? '#E91E8C' : 'transparent'}`, cursor: 'pointer', padding: 0 }}>
+                          style={{ flexShrink: 0, width: '56px', height: '56px', borderRadius: '0px', overflow: 'hidden', border: `2px solid ${imgIdx === i ? '#E91E8C' : 'transparent'}`, cursor: 'pointer', padding: 0 }}>
                           <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                         </button>
                       ))}
@@ -236,7 +256,7 @@ export default function AdminProductsPage() {
                   { label: 'Selling', val: `₹${selected.sellingPrice}`, bg: '#F0FDF4', color: '#16A34A' },
                   { label: 'Discount', val: `${Math.round(((selected.mrp - selected.sellingPrice) / selected.mrp) * 100)}%`, bg: '#FDF0F8', color: '#E91E8C' },
                 ].map(item => (
-                  <div key={item.label} style={{ background: item.bg, borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                  <div key={item.label} style={{ background: item.bg, borderRadius: '0px', padding: '12px', textAlign: 'center' }}>
                     <p style={{ fontSize: '11px', color: '#94A3B8', margin: '0 0 4px' }}>{item.label}</p>
                     <p style={{ fontWeight: '700', color: item.color, margin: 0, fontSize: '16px' }}>{item.val}</p>
                   </div>
@@ -245,12 +265,12 @@ export default function AdminProductsPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
                 {[
-                  { label: 'Category', value: `${selected.category} › ${selected.subCategory}` },
-                  { label: 'Brand', value: selected.brand || '—' },
-                  { label: 'GST', value: `${selected.gstPercent}%` },
-                  { label: 'Seller', value: selected.seller?.sellerDetails?.businessName || selected.seller?.name },
+                  { label: 'Category', value: buildCategoryPath(selected) },
+                  { label: 'Brand',    value: selected.brand || '—' },
+                  { label: 'GST',      value: `${selected.gstPercent}%` },
+                  { label: 'Seller',   value: selected.seller?.sellerDetails?.businessName || selected.seller?.name },
                 ].map(item => (
-                  <div key={item.label} style={{ background: '#F9F9FB', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div key={item.label} style={{ background: '#F9F9FB', borderRadius: '0px', padding: '10px 12px' }}>
                     <p style={{ fontSize: '10px', color: '#94A3B8', margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{item.label}</p>
                     <p style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A2E', margin: 0, textTransform: 'capitalize' }}>{item.value || '—'}</p>
                   </div>
@@ -262,7 +282,7 @@ export default function AdminProductsPage() {
                   <p style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px' }}>Variants ({selected.variants.length})</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {selected.variants.map((v, i) => (
-                      <span key={i} style={{ fontSize: '11px', background: '#F1F5F9', color: '#374151', padding: '4px 10px', borderRadius: '20px', fontWeight: '600' }}>
+                      <span key={i} style={{ fontSize: '11px', background: '#F1F5F9', color: '#374151', padding: '4px 10px', borderRadius: '0px', fontWeight: '600' }}>
                         {v.size}{v.color ? ` / ${v.color}` : ''} — {v.stock} pcs
                       </span>
                     ))}
@@ -270,14 +290,41 @@ export default function AdminProductsPage() {
                 </div>
               )}
 
+              {selected.additionalDetails && Object.entries(selected.additionalDetails).filter(([, v]) => v).length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px' }}>
+                    Product Details
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', border: '1px solid #EBEBF0', borderRadius: '8px', overflow: 'hidden' }}>
+                    {Object.entries(selected.additionalDetails)
+                      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                      .map(([key, value], i, arr) => (
+                        <div key={key} style={{
+                          display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: '10px 14px',
+                          background: i % 2 === 0 ? 'white' : '#F9F9FB',
+                          borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none',
+                        }}>
+                          <span style={{ flex: '0 0 44%', fontSize: '12px', fontWeight: '600', color: '#94A3B8' }}>
+                            {formatKey(key)}
+                          </span>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A2E' }}>
+                            {value}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               {selected.status === 'pending' && (
                 <div style={{ display: 'flex', gap: '12px', paddingTop: '16px', borderTop: '1px solid #EBEBF0' }}>
                   <button onClick={() => handleApprove(selected._id)} disabled={actionLoad}
-                    style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <FiCheck size={16} /> {actionLoad ? 'Approving...' : 'Approve & Go Live'}
                   </button>
                   <button onClick={() => setRejectModal({ productId: selected._id, productTitle: selected.title })}
-                    style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg,#f43f5e,#be123c)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg,#f43f5e,#be123c)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <FiX size={16} /> Reject
                   </button>
                 </div>

@@ -17,7 +17,7 @@ export default function OnlineUsersPanel() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
         <div style={{ position: 'relative' }}>
-          <div style={{ width: '10px', height: '10px', background: '#22c55e', borderRadius: '50%' }}/>
+          <div style={{ width: '10px', height: '10px', background: '#22c55e', borderRadius: '0%' }}/>
         </div>
         <div>
           <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>Live users online</p>

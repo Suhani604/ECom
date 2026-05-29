@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 
 const orderItemSchema = new mongoose.Schema({
   product:      { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-  variantId:    { type: mongoose.Schema.Types.ObjectId },   // ← ADD THIS LINE
+  variantId:    { type: mongoose.Schema.Types.ObjectId },
   seller:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   title:        { type: String, required: true },
   image:        { type: String, default: '' },
@@ -25,21 +25,42 @@ const addressSnapshotSchema = new mongoose.Schema({
 })
 
 const orderSchema = new mongoose.Schema({
-  buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  items: [orderItemSchema],
+  buyer:             { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  items:             [orderItemSchema],
   deliveryAddress:   addressSnapshotSchema,
-  paymentMethod:     { type: String, enum: ['razorpay','cod'], required: true },
-  paymentStatus:     { type: String, enum: ['pending','paid','failed','refunded'], default: 'pending' },
+  paymentMethod:     { type: String, enum: ['razorpay', 'cod'], required: true },
+  paymentStatus:     { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
   razorpayOrderId:   { type: String, default: '' },
   razorpayPaymentId: { type: String, default: '' },
-  subtotal:          { type: Number, required: true },
-  shippingFee:       { type: Number, default: 0 },
-  discount:          { type: Number, default: 0 },
-  totalAmount:       { type: Number, required: true },
-  couponCode:        { type: String, default: '' },
+
+  // ── Pricing ───────────────────────────────────────────────────────────────
+  subtotal:    { type: Number, required: true },
+  shippingFee: { type: Number, default: 0 },
+  discount:    { type: Number, default: 0 },
+  totalAmount: { type: Number, required: true },
+  couponCode:  { type: String, default: '' },
+
+  // ── Shipping extended (from VogueCart_Shipping_Master.xlsx) ───────────────
+  courierName:        { type: String, default: 'Delhivery' },
+  courierType:        { type: String, default: '' },
+  zone:               { type: String, enum: ['sameCity', 'metro', 'nonMetro', 'remote'], default: 'nonMetro' },
+  deliveryDays:       { type: Number, default: 4 },
+  codCharge:          { type: Number, default: 0 },
+  platformCommission: { type: Number, default: 0 },
+  gstOnShipping:      { type: Number, default: 0 },
+  paymentGatewayFee:  { type: Number, default: 0 },
+  totalDeducted:      { type: Number, default: 0 },
+  sellerPayout:       { type: Number, default: 0 },
+  effectiveMarginPct: { type: Number, default: 0 },
+
+  // ── Tracking ──────────────────────────────────────────────────────────────
+  trackingUrl:  { type: String, default: '' },
+  trackingNote: { type: String, default: '' },
+
+  // ── Status ────────────────────────────────────────────────────────────────
   status: {
     type: String,
-    enum: ['placed','confirmed','packed','shipped','out_for_delivery','delivered','cancelled','return_requested','returned'],
+    enum: ['placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'return_requested', 'returned'],
     default: 'placed',
   },
   statusHistory: [{
@@ -47,8 +68,11 @@ const orderSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now },
     note:      String,
   }],
-  payoutStatus:      { type: String, enum: ['pending','processing','paid'], default: 'pending' },
-  payoutReleasedAt:  { type: Date },
+
+  // ── Payout ────────────────────────────────────────────────────────────────
+  payoutStatus:     { type: String, enum: ['pending', 'processing', 'paid'], default: 'pending' },
+  payoutReleasedAt: { type: Date },
+
 }, { timestamps: true })
 
 const Order = mongoose.model('Order', orderSchema)

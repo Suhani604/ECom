@@ -71,13 +71,13 @@ export default function AdminBuyersPage() {
         {/* Header */}
         <header style={{ background: 'white', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #EBEBF0', position: 'sticky', top: 0, zIndex: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => setSideOpen(true)} style={{ background: '#F9F9FB', border: 'none', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex' }} className="lg:hidden">☰</button>
+            <button onClick={() => setSideOpen(true)} style={{ background: '#F9F9FB', border: 'none', padding: '8px 10px', borderRadius: '2px', cursor: 'pointer', fontSize: '16px', display: 'flex' }} className="lg:hidden">☰</button>
             <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#1A1A2E', margin: 0, fontFamily: f }}>Buyers</h1>
-            <span style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: '600' }}>{total} total</span>
+            <span style={{ background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 12px', borderRadius: '0px', fontSize: '11px', fontWeight: '600' }}>{total} total</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <NotificationBell />
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700' }}>AD</div>
+            <div style={{ width: '36px', height: '36px', borderRadius: '0%', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700' }}>AD</div>
           </div>
         </header>
 
@@ -96,7 +96,7 @@ export default function AdminBuyersPage() {
                 <div style={{ fontSize: '20px', position: 'absolute', right: '16px', top: '16px', opacity: 0.25 }}>{icon}</div>
                 <p style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 6px', fontWeight: '600' }}>{label}</p>
                 <p style={{ fontSize: '28px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 6px' }}>{val.toLocaleString('en-IN')}</p>
-                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: '500', background: up ? '#DCFCE7' : '#FEE2E2', color: up ? '#16A34A' : '#DC2626' }}>{badge}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '11px', padding: '2px 8px', borderRadius: '0px', fontWeight: '500', background: up ? '#DCFCE7' : '#FEE2E2', color: up ? '#16A34A' : '#DC2626' }}>{badge}</span>
               </div>
             ))}
           </div>
@@ -107,27 +107,27 @@ export default function AdminBuyersPage() {
               <FiSearch style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: '#C0C0D0' }} size={14} />
               <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by name, email or phone..."
-                style={{ width: '100%', padding: '10px 14px 10px 38px', border: '1px solid #EBEBF0', borderRadius: '12px', fontSize: '13px', fontFamily: f, background: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px 10px 38px', border: '1px solid #EBEBF0', borderRadius: '0px', fontSize: '13px', fontFamily: f, background: 'white', outline: 'none', boxSizing: 'border-box' }} />
             </div>
 
             {[['all', 'All Buyers'], ['active', 'Active'], ['blocked', 'Blocked']].map(([val, label]) => (
               <button key={val} onClick={() => { setFilterStatus(val); setPage(1) }}
-                style={{ padding: '9px 16px', border: filterStatus === val ? 'none' : '1px solid #EBEBF0', borderRadius: '12px', background: filterStatus === val ? 'linear-gradient(135deg,#E91E8C,#7C3AED)' : 'white', color: filterStatus === val ? 'white' : '#6B7280', fontSize: '13px', fontFamily: f, cursor: 'pointer', fontWeight: filterStatus === val ? '600' : '400', whiteSpace: 'nowrap', transition: 'all 0.2s', boxShadow: filterStatus === val ? '0 4px 12px rgba(233,30,140,0.25)' : 'none' }}>
+                style={{ padding: '9px 16px', border: filterStatus === val ? 'none' : '1px solid #EBEBF0', borderRadius: '0px', background: filterStatus === val ? 'linear-gradient(135deg,#E91E8C,#7C3AED)' : 'white', color: filterStatus === val ? 'white' : '#6B7280', fontSize: '13px', fontFamily: f, cursor: 'pointer', fontWeight: filterStatus === val ? '600' : '400', whiteSpace: 'nowrap', transition: 'all 0.2s', boxShadow: filterStatus === val ? '0 4px 12px rgba(233,30,140,0.25)' : 'none' }}>
                 {label}
               </button>
             ))}
 
-            <button onClick={fetchBuyers} style={{ width: '42px', height: '42px', border: '1px solid #EBEBF0', borderRadius: '12px', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}>
+            <button onClick={fetchBuyers} style={{ width: '42px', height: '42px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}>
               <FiRefreshCw size={15} />
             </button>
 
-            <button style={{ padding: '9px 18px', borderRadius: '12px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', border: 'none', color: 'white', fontSize: '13px', fontFamily: f, cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+            <button style={{ padding: '9px 18px', borderRadius: '0px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', border: 'none', color: 'white', fontSize: '13px', fontFamily: f, cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               <FiDownload size={14} /> Export
             </button>
           </div>
 
           {/* Table card */}
-          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #EBEBF0', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ background: 'white', borderRadius: '0px', border: '1px solid #EBEBF0', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
 
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid #EBEBF0', padding: '0 20px' }}>
@@ -151,7 +151,7 @@ export default function AdminBuyersPage() {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: '#94A3B8' }}>
-                      <div style={{ display: 'inline-block', width: '20px', height: '20px', border: '2px solid #F8D0EC', borderTopColor: '#E91E8C', borderRadius: '50%', animation: 'spin 0.7s linear infinite', marginRight: '8px', verticalAlign: 'middle' }} />
+                      <div style={{ display: 'inline-block', width: '20px', height: '20px', border: '2px solid #F8D0EC', borderTopColor: '#E91E8C', borderRadius: '0%', animation: 'spin 0.7s linear infinite', marginRight: '8px', verticalAlign: 'middle' }} />
                       Loading buyers...
                     </td></tr>
                   ) : visibleBuyers.length === 0 ? (
@@ -166,7 +166,7 @@ export default function AdminBuyersPage() {
                         onMouseLeave={e => e.currentTarget.style.background = 'white'}>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: av.bg, color: av.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>{getInitials(buyer.name)}</div>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '0%', background: av.bg, color: av.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>{getInitials(buyer.name)}</div>
                             <div>
                               <p style={{ fontWeight: '600', color: '#1A1A2E', margin: 0, fontSize: '13px' }}>{buyer.name}</p>
                               <p style={{ fontSize: '11px', color: '#B0B0C0', margin: 0 }}>#{buyer._id.slice(-6).toUpperCase()}</p>
@@ -176,15 +176,15 @@ export default function AdminBuyersPage() {
                         <td style={{ padding: '14px 16px', color: '#4B4B6B' }}>{buyer.email}</td>
                         <td style={{ padding: '14px 16px', color: '#4B4B6B' }}>{buyer.phone}</td>
                         <td style={{ padding: '14px 16px' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', background: buyer.isActive ? '#DCFCE7' : '#FEE2E2', color: buyer.isActive ? '#16A34A' : '#DC2626' }}>
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: buyer.isActive ? '#22C55E' : '#F87171' }} />
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '0px', fontSize: '11px', fontWeight: '600', background: buyer.isActive ? '#DCFCE7' : '#FEE2E2', color: buyer.isActive ? '#16A34A' : '#DC2626' }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '0%', background: buyer.isActive ? '#22C55E' : '#F87171' }} />
                             {buyer.isActive ? 'Active' : 'Blocked'}
                           </span>
                         </td>
                         <td style={{ padding: '14px 16px', color: '#94A3B8', fontSize: '12px' }}>{new Date(buyer.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <button onClick={() => handleBlock(buyer._id, buyer.name, buyer.isActive)}
-                            style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', fontFamily: f, display: 'inline-flex', alignItems: 'center', gap: '5px', background: buyer.isActive ? '#FEE2E2' : '#DCFCE7', color: buyer.isActive ? '#DC2626' : '#16A34A', transition: 'all 0.18s' }}>
+                            style={{ padding: '6px 14px', borderRadius: '0px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', fontFamily: f, display: 'inline-flex', alignItems: 'center', gap: '5px', background: buyer.isActive ? '#FEE2E2' : '#DCFCE7', color: buyer.isActive ? '#DC2626' : '#16A34A', transition: 'all 0.18s' }}>
                             {buyer.isActive ? <><FiUserX size={12} /> Block</> : <><FiUserCheck size={12} /> Unblock</>}
                           </button>
                         </td>
@@ -201,7 +201,7 @@ export default function AdminBuyersPage() {
                 <span style={{ fontSize: '12px', color: '#94A3B8' }}>Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total} buyers</span>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '8px', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>← Prev</button>
+                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>← Prev</button>
                   {[...Array(Math.min(3, totalPages))].map((_, i) => (
                     <button key={i + 1} onClick={() => setPage(i + 1)}
                       style={{ minWidth: '32px', height: '32px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontFamily: f, background: page === i + 1 ? 'linear-gradient(135deg,#E91E8C,#7C3AED)' : 'white', color: page === i + 1 ? 'white' : '#4B4B6B', border: page === i + 1 ? 'none' : '1px solid #EBEBF0' }}>
@@ -209,7 +209,7 @@ export default function AdminBuyersPage() {
                     </button>
                   ))}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '8px', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>Next →</button>
+                    style={{ padding: '6px 14px', border: '1px solid #EBEBF0', borderRadius: '0px', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, fontSize: '12px', fontFamily: f }}>Next →</button>
                 </div>
               </div>
             )}

@@ -4,7 +4,7 @@ import {
   getAllSellers, getSellerById, approveSeller, rejectSeller, suspendSeller,
   getAllProducts, approveProduct, rejectProduct,
   getAllBuyers, toggleBlockUser,
-  getAllOrders,
+  getAllOrders, updateOrderStatus, 
 } from '../controllers/adminController.js'
 import { authenticate, authorise } from '../middlewares/authMiddleware.js'
 
@@ -25,5 +25,6 @@ router.put('/products/:id/reject',    rejectProduct)
 router.get('/buyers',                 getAllBuyers)
 router.put('/users/:id/block',        toggleBlockUser)
 router.get('/orders',                 getAllOrders)
+router.patch('/orders/:id/status',    updateOrderStatus)
 
 export default router
