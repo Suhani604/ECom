@@ -34,6 +34,7 @@ import AddReviewPage        from './pages/buyer/AddReviewPage.jsx'
 import AdminReviewsPage  from './pages/admin/AdminReviewsPage.jsx'
 import SellerReviewsPage from './pages/seller/SellerReviewsPage.jsx'
 import AdminBannersPage from './pages/admin/AdminBannersPage.jsx'
+import AdminCategoryPage from './pages/admin/AdminCategoryPage.jsx'
 
 
 export default function App() {
@@ -105,6 +106,7 @@ export default function App() {
           <Route path="/admin/reviews"  element={<ProtectedRoute role="admin"><AdminReviewsPage /></ProtectedRoute>}  />
           // ...
         <Route path="/admin/banners" element={<ProtectedRoute role="admin"><AdminBannersPage /></ProtectedRoute>} />
+        <Route path="/admin/categories" element={<ProtectedRoute role="admin"><AdminCategoryPage /></ProtectedRoute>} />
 
         
 

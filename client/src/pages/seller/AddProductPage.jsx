@@ -790,6 +790,66 @@ export default function AddProductPage() {
                   </div>
                 </div>
               </div>
+                {/* Shipping Payout Summary Card */}
+              {watch('sellingPrice') > 0 && (
+                <div className="card border border-orange-100 bg-gradient-to-b from-orange-50 to-white">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FiTruck className="text-orange-500" size={14} />
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      Estimated Payout
+                    </h3>
+                  </div>
+                  {(() => {
+                    const sp          = Number(watch('sellingPrice')) || 0
+                    const isCOD       = shipping.codAvailable
+                    const weightG     = Math.max(
+                      Math.round(shipping.shippingWeightKg * 1000),
+                      Math.round(chargeableKg * 1000)
+                    )
+                    const slabs       = Math.ceil(weightG / 500)
+                    const shippingFee = shipping.freeShipping ? 0 : (38 + Math.max(0, slabs - 1) * 10)
+                    const codCharge   = isCOD ? Math.max(30, Math.round(sp * 1.5 / 100)) + 20 : 0
+                    const commission  = Math.round(sp * 9 / 100)
+                    const gstOnShip   = Math.round(shippingFee * 18 / 100)
+                    const pgFee       = isCOD ? 0 : Math.round(sp * 2 / 100)
+                    const tds         = Math.round(sp * 1 / 100)
+                    const payout      = Math.max(0, sp - shippingFee - gstOnShip - commission - codCharge - pgFee - tds)
+                    const rows = [
+                      { label: 'Selling Price',           val: `₹${sp}`,          sign: '',  highlight: true },
+                      { label: `Shipping (${weightG}g est.)`, val: shipping.freeShipping ? 'Free (you absorb)' : `₹${shippingFee}`, sign: '−', green: shipping.freeShipping },
+                      { label: 'GST on Shipping 18%',     val: `₹${gstOnShip}`,   sign: '−' },
+                      { label: 'Platform Commission 9%',  val: `₹${commission}`,  sign: '−' },
+                      ...(isCOD ? [{ label: 'COD Charge', val: `₹${codCharge}`,   sign: '−' }] : []),
+                      ...(!isCOD && pgFee > 0 ? [{ label: 'Payment Gateway 2%', val: `₹${pgFee}`, sign: '−' }] : []),
+                      { label: 'TDS 1%',                  val: `₹${tds}`,         sign: '−' },
+                    ]
+                    return (
+                      <div className="space-y-2 text-xs">
+                        {rows.map(({ label, val, sign, highlight, green }) => (
+                          <div key={label} className="flex justify-between">
+                            <span className={highlight ? 'font-medium text-gray-700' : 'text-gray-500'}>{label}</span>
+                            <span className={green ? 'text-green-600 font-medium' : highlight ? 'font-medium text-gray-800' : 'text-gray-600'}>
+                              {sign && !green ? `${sign} ` : ''}{val}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="border-t border-orange-200 pt-2 mt-1 flex justify-between items-center">
+                          <span className="font-semibold text-gray-700 text-sm">Your Payout</span>
+                          <span className={`font-bold text-lg ${payout > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                            ₹{payout}
+                          </span>
+                        </div>
+                        <p className="text-gray-400 text-[10px] pt-1 leading-relaxed">
+                          * Estimate for nonMetro zone. Actual varies by buyer location. Payout released 10 days after delivery.
+                        </p>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+
+             
+
 
               {/* Submit mobile */}
               <button type="submit" disabled={loading}

@@ -1,31 +1,37 @@
-import axios from 'axios'
-
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000' })
+import api from './axiosInstance.js'  // ← yahi change hai, alag axios nahi
 
 // Level 1 — Men, Women, Kids
 export const getCategoriesAPI = () =>
-  API.get('/api/categories')
+  api.get('/categories')
 
 // Level 2 — Ethnic Wear, Western Wear, Shoes...
 export const getItemTypesAPI = (categoryId) =>
-  API.get(`/api/categories/item-types?categoryId=${categoryId}`)
+  api.get(`/categories/item-types?categoryId=${categoryId}`)
 
 // Level 3 — Kurtis Sets & Fabrics, Sarees...
 export const getSubItemTypesAPI = (itemTypeId) =>
-  API.get(`/api/categories/sub-item-types?itemTypeId=${itemTypeId}`)
+  api.get(`/categories/sub-item-types?itemTypeId=${itemTypeId}`)
 
 // Level 4 — Kurtis, Anarkalis, Straight Kurtas...
 export const getItemNamesAPI = (subItemTypeId) =>
-  API.get(`/api/categories/item-names?subItemTypeId=${subItemTypeId}`)
+  api.get(`/categories/item-names?subItemTypeId=${subItemTypeId}`)
 
-// Sizes (needs all 3 IDs)
+// Sizes
 export const getSizesAPI = (categoryId, itemTypeId, itemNameId) =>
-  API.get(`/api/categories/sizes?categoryId=${categoryId}&itemTypeId=${itemTypeId}&itemNameId=${itemNameId}`)
+  api.get(`/categories/sizes?categoryId=${categoryId}&itemTypeId=${itemTypeId}&itemNameId=${itemNameId}`)
 
-// Colors (needs category + itemType)
+// Colors
 export const getColorsAPI = (categoryId, itemTypeId) =>
-  API.get(`/api/categories/colors?categoryId=${categoryId}&itemTypeId=${itemTypeId}`)
+  api.get(`/categories/colors?categoryId=${categoryId}&itemTypeId=${itemTypeId}`)
 
-// Additional Details (needs category + itemType)
+// Additional Details
 export const getAdditionalDetailsAPI = (categoryId, itemTypeId) =>
-  API.get(`/api/categories/additional-details?categoryId=${categoryId}&itemTypeId=${itemTypeId}`)
+  api.get(`/categories/additional-details?categoryId=${categoryId}&itemTypeId=${itemTypeId}`)
+
+// Admin — get all additional details
+export const getAdminAdditionalDetailsAPI = () =>
+  api.get('/admin/categories/additional-details')
+
+// Admin — upsert additional details
+export const upsertAdditionalDetailsAPI = (data) =>
+  api.post('/admin/categories/additional-details', data)
