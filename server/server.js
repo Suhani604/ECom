@@ -36,7 +36,6 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:3000',
     'https://e-com-neon-kappa.vercel.app',
-    'https://e-mv424eibt-suhanis-projects-1f9562d3.vercel.app'
   ],
   credentials: true,
 }))
