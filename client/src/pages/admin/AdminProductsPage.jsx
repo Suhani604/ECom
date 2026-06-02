@@ -25,6 +25,18 @@ const TABS = [
 
 const f = 'Poppins, sans-serif'
 
+// ── FIX 1: helper to filter out broken/undefined image URLs ──────────────────
+const getProductImage = (images, size = '200x200') => {
+  const valid = images?.find(img =>
+    img &&
+    typeof img === 'string' &&
+    !img.includes('undefined') &&
+    !img.includes('null') &&
+    img.startsWith('http')
+  )
+  return valid || `https://placehold.co/${size}?text=No+Image`
+}
+
 const resolveName = (field) => {
   if (!field) return '—'
   if (typeof field === 'object' && field.name) return field.name
@@ -48,7 +60,7 @@ export default function AdminProductsPage() {
   const [sideOpen,    setSideOpen]    = useState(false)
   const [products,    setProducts]    = useState([])
   const [loading,     setLoading]     = useState(true)
-  const [status,      setStatus]      = useState('')          // ← changed from 'pending' to ''
+  const [status,      setStatus]      = useState('')
   const [search,      setSearch]      = useState('')
   const [page,        setPage]        = useState(1)
   const [total,       setTotal]       = useState(0)
@@ -73,7 +85,13 @@ export default function AdminProductsPage() {
 
   const handleApprove = async (id) => {
     setActionLoad(true)
-    try { await approveProductAPI(id); toast.success('✅ Product approved!'); setSelected(null); fetchProducts() }
+    try {
+      // ── FIX 2: correct route — was /approve, now /status with body ──────
+      await approveProductAPI(id)
+      toast.success('✅ Product approved!')
+      setSelected(null)
+      fetchProducts()
+    }
     catch (e) { toast.error(e.response?.data?.message || 'Failed') }
     finally { setActionLoad(false) }
   }
@@ -82,6 +100,7 @@ export default function AdminProductsPage() {
     if (!reason.trim()) return toast.error('Enter rejection reason')
     setActionLoad(true)
     try {
+      // ── FIX 2: correct route — was /reject, now /status with body ───────
       await rejectProductAPI(rejectModal.productId, reason)
       toast.success('Product rejected')
       setRejectModal(null); setReason(''); setSelected(null); fetchProducts()
@@ -161,10 +180,10 @@ export default function AdminProductsPage() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
                 {products.map(product => {
-                  const sc   = STATUS_STYLE[product.status] || STATUS_STYLE.pending
+                  const sc      = STATUS_STYLE[product.status] || STATUS_STYLE.pending
                   const catName = resolveName(product.category)
-                  const cc   = CAT_STYLE[catName?.toLowerCase()] || { bg: '#F1F5F9', color: '#64748B' }
-                  const disc = product.mrp > product.sellingPrice ? Math.round(((product.mrp - product.sellingPrice) / product.mrp) * 100) : 0
+                  const cc      = CAT_STYLE[catName?.toLowerCase()] || { bg: '#F1F5F9', color: '#64748B' }
+                  const disc    = product.mrp > product.sellingPrice ? Math.round(((product.mrp - product.sellingPrice) / product.mrp) * 100) : 0
                   return (
                     <div key={product._id}
                       onClick={() => { setSelected(product); setImgIdx(0) }}
@@ -172,9 +191,13 @@ export default function AdminProductsPage() {
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(233,30,140,0.12)' }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)' }}>
                       <div style={{ position: 'relative' }}>
-                        <img src={product.images?.[0]} alt={product.title}
+                        {/* ── FIX 3: use getProductImage helper ── */}
+                        <img
+                          src={getProductImage(product.images, '200x200')}
+                          alt={product.title}
                           style={{ width: '100%', height: '200px', objectFit: 'cover', background: '#F8FAFC', display: 'block' }}
-                          onError={e => { e.target.style.background = '#F1F5F9'; e.target.src = '' }} />
+                          onError={e => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200?text=No+Image' }}
+                        />
                         {disc > 0 && <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', fontSize: '10px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px' }}>{disc}% OFF</span>}
                       </div>
                       <div style={{ padding: '12px' }}>
@@ -231,29 +254,36 @@ export default function AdminProductsPage() {
               <button onClick={() => setSelected(null)} style={{ background: '#F1F5F9', border: 'none', width: '32px', height: '32px', borderRadius: '0%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: '16px' }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px' }}>
-              {selected.images?.length > 0 && (
-                <div style={{ marginBottom: '18px' }}>
-                  <img src={selected.images[imgIdx]} alt="" style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '0px', background: '#F1F5F9', display: 'block' }} />
-                  {selected.images.length > 1 && (
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px', overflowX: 'auto' }}>
-                      {selected.images.map((img, i) => (
+              {/* ── FIX 3: Modal image — always show, even if images[] is empty ── */}
+              <div style={{ marginBottom: '18px' }}>
+                <img
+                  src={getProductImage([selected.images?.[imgIdx]], '600x400')}
+                  alt=""
+                  style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '0px', background: '#F1F5F9', display: 'block' }}
+                  onError={e => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400?text=No+Image' }}
+                />
+                {selected.images?.filter(img => img && !img.includes('undefined')).length > 1 && (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px', overflowX: 'auto' }}>
+                    {selected.images
+                      .filter(img => img && !img.includes('undefined'))
+                      .map((img, i) => (
                         <button key={i} onClick={() => setImgIdx(i)}
                           style={{ flexShrink: 0, width: '56px', height: '56px', borderRadius: '0px', overflow: 'hidden', border: `2px solid ${imgIdx === i ? '#E91E8C' : 'transparent'}`, cursor: 'pointer', padding: 0 }}>
-                          <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                          <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt=""
+                            onError={e => { e.target.onerror = null; e.target.src = 'https://placehold.co/56x56?text=?' }} />
                         </button>
                       ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
 
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 6px', fontFamily: f }}>{selected.title}</h3>
               <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 18px', lineHeight: '1.7' }}>{selected.description}</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '16px' }}>
                 {[
-                  { label: 'MRP', val: `₹${selected.mrp}`, bg: '#F9F9FB', color: '#4B4B6B' },
-                  { label: 'Selling', val: `₹${selected.sellingPrice}`, bg: '#F0FDF4', color: '#16A34A' },
+                  { label: 'MRP',      val: `₹${selected.mrp}`,          bg: '#F9F9FB', color: '#4B4B6B' },
+                  { label: 'Selling',  val: `₹${selected.sellingPrice}`,  bg: '#F0FDF4', color: '#16A34A' },
                   { label: 'Discount', val: `${Math.round(((selected.mrp - selected.sellingPrice) / selected.mrp) * 100)}%`, bg: '#FDF0F8', color: '#E91E8C' },
                 ].map(item => (
                   <div key={item.label} style={{ background: item.bg, borderRadius: '0px', padding: '12px', textAlign: 'center' }}>
@@ -292,25 +322,14 @@ export default function AdminProductsPage() {
 
               {selected.additionalDetails && Object.entries(selected.additionalDetails).filter(([, v]) => v).length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
-                  <p style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px' }}>
-                    Product Details
-                  </p>
+                  <p style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px' }}>Product Details</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', border: '1px solid #EBEBF0', borderRadius: '8px', overflow: 'hidden' }}>
                     {Object.entries(selected.additionalDetails)
                       .filter(([, v]) => v !== null && v !== undefined && v !== '')
                       .map(([key, value], i, arr) => (
-                        <div key={key} style={{
-                          display: 'flex', alignItems: 'center', gap: '12px',
-                          padding: '10px 14px',
-                          background: i % 2 === 0 ? 'white' : '#F9F9FB',
-                          borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none',
-                        }}>
-                          <span style={{ flex: '0 0 44%', fontSize: '12px', fontWeight: '600', color: '#94A3B8' }}>
-                            {formatKey(key)}
-                          </span>
-                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A2E' }}>
-                            {value}
-                          </span>
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: i % 2 === 0 ? 'white' : '#F9F9FB', borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                          <span style={{ flex: '0 0 44%', fontSize: '12px', fontWeight: '600', color: '#94A3B8' }}>{formatKey(key)}</span>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#1A1A2E' }}>{value}</span>
                         </div>
                       ))}
                   </div>

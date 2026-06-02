@@ -127,3 +127,34 @@ export const getMegaMenu = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message })
   }
 }
+
+// ── GET /api/admin/categories/additional-details
+export const getAdditionalDetailsForAdmin = async (req, res) => {
+  try {
+    const details = await AdditionalDetail.find({ isActive: true })
+      .populate('categoryId',  'name slug')
+      .populate('itemTypeId',  'name slug')
+      .sort({ createdAt: -1 })
+    res.json({ success: true, data: details })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+// ── POST /api/admin/categories/additional-details
+export const upsertAdditionalDetails = async (req, res) => {
+  try {
+    const { categoryId, itemTypeId, fields } = req.body
+    if (!categoryId || !itemTypeId)
+      return res.status(400).json({ success: false, message: 'categoryId and itemTypeId required' })
+
+    const doc = await AdditionalDetail.findOneAndUpdate(
+      { categoryId, itemTypeId },
+      { categoryId, itemTypeId, fields, isActive: true },
+      { upsert: true, new: true }
+    )
+    res.json({ success: true, data: doc })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+}

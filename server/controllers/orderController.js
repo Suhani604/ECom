@@ -17,8 +17,8 @@ import {
   calculateReverseShipping,
   detectZone,
   getCheapestCourier,
-  COURIER_RATES,
 } from '../utils/shippingHelper.js'
+import { Courier } from '../models/ShippingConfig.js'
 
 // ─── Razorpay instance ────────────────────────────────────────────────────────
 const razorpay = new Razorpay({
@@ -80,22 +80,18 @@ export const createOrder = async (req, res) => {
 
     // ── Calculate shipping ─────────────────────────────────────────────────
     const buyerPincode     = deliveryAddress.pincode
-    const zone             = detectZone(buyerPincode, SELLER_PINCODE)
-    const courierKey       = getCheapestCourier(zone)
+    const zone           = detectZone(buyerPincode, SELLER_PINCODE)
+const firstProduct   = await Product.findById(orderItems[0].product)
+const itemWeightG    = firstProduct?.shippingWeight  || 500
+const packagingWeightG = firstProduct?.packagingWeight || 60
 
-    const firstProduct       = await Product.findById(orderItems[0].product)
-    const itemWeightG        = firstProduct?.shippingWeight    || 500
-    const packagingWeightG   = firstProduct?.packagingWeight   || 60
-
-    const shipping = calculateShipping({
-      itemWeightG,
-      packagingWeightG,
-      zone,
-      courier:               courierKey,
-      isCOD:                 paymentMethod === 'cod',
-      sellingPrice:          subtotal,
-      platformCommissionRate: 0.09,
-    })
+const shipping = await calculateShipping({
+  itemWeightG,
+  packagingWeightG,
+  zone,
+  isCOD:        paymentMethod === 'cod',
+  sellingPrice: subtotal,
+})
 
     const discount    = 0
     const totalAmount = subtotal + shipping.shippingFee - discount
@@ -318,7 +314,7 @@ export const requestReturn = async (req, res) => {
     return errorResponse(res, 'Can only return delivered orders')
 
   // ── FIXED: calculateReverseShipping returns .total not .totalReverse ──────
-  const reverseCharge = calculateReverseShipping(order.zone || 'nonMetro')
+  const reverseCharge = await calculateReverseShipping(order.zone || 'nonMetro')
 
   order.status = 'return_requested'
   order.statusHistory.push({
@@ -450,10 +446,9 @@ function parseGoogleComponents(components = []) {
   return { city, district, state }
 }
 
-function buildPincodeResult(pincode, { city, district, state }, buyerPincode) {
+async function buildPincodeResult(pincode, { city, district, state }, buyerPincode) {
   const zone         = detectZone(buyerPincode, SELLER_PINCODE)
-  const courierKey   = getCheapestCourier(zone)
-  const courierData  = COURIER_RATES[courierKey]
+const courierData  = await getCheapestCourier(zone)
 
   // ── FIXED: deliveryDays is now an object per zone ─────────────────────────
   const deliveryDays = courierData.deliveryDays[zone] || 4
@@ -503,7 +498,7 @@ export const checkPincode = async (req, res) => {
           const parsed = parseGoogleComponents(data.results[0].address_components)
           if (parsed.state) {
             console.log(`[checkPincode] Google ✅ ${pincode} → ${parsed.city}, ${parsed.state}`)
-            return successResponse(res, 'Pincode checked', buildPincodeResult(pincode, parsed, pincode))
+            return successResponse(res, 'Pincode checked', await buildPincodeResult(pincode, parsed, pincode))
           }
         }
 
@@ -524,11 +519,10 @@ export const checkPincode = async (req, res) => {
     if (local) {
       console.log(`[checkPincode] Local DB ✅ ${pincode} → ${local.district}, ${local.state}`)
       const zone         = detectZone(pincode, SELLER_PINCODE)
-      const courierKey   = getCheapestCourier(zone)
-      const courierData  = COURIER_RATES[courierKey]
+     const courierData  = await getCheapestCourier(zone)
 
       // ── FIXED: deliveryDays is now an object per zone ───────────────────
-      const deliveryDays = courierData.deliveryDays[zone] || 4
+      const deliveryDays = courierData.zones?.[zone]?.deliveryDays || 4
       const deliveryDate = new Date(Date.now() + deliveryDays * 86400000)
         .toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })
 
@@ -558,8 +552,9 @@ export const checkPincode = async (req, res) => {
 // GET /api/orders/shipping-rates
 // ═══════════════════════════════════════════════════════════════════════════════
 export const shippingRates = async (req, res) => {
+  const couriers = await Courier.find({ isActive: true })
   return successResponse(res, 'Shipping rates fetched', {
-    couriers:      COURIER_RATES,
+    couriers,
     sellerPincode: SELLER_PINCODE,
   })
 }
@@ -580,8 +575,7 @@ export const calculateShippingRoute = async (req, res) => {
     } = req.body
 
     const zone    = detectZone(buyerPincode, SELLER_PINCODE)
-    const courier = getCheapestCourier(zone)
-    const result  = calculateShipping({ itemWeightG, packagingWeightG, zone, courier, isCOD, sellingPrice })
+    const result  = await calculateShipping({ itemWeightG, packagingWeightG, zone, isCOD, sellingPrice })
 
     return successResponse(res, 'Shipping calculated', result)
   } catch (err) {

@@ -4,8 +4,14 @@ import {
   getAllSellers, getSellerById, approveSeller, rejectSeller, suspendSeller,
   getAllProducts, approveProduct, rejectProduct,
   getAllBuyers, toggleBlockUser,
-  getAllOrders, updateOrderStatus, 
+  getAllOrders, updateOrderStatus,
 } from '../controllers/adminController.js'
+
+// ← Alag import karo categoryController se
+import {
+  getAdditionalDetailsForAdmin,
+  upsertAdditionalDetails,
+} from '../controllers/categoryController.js'
 import { authenticate, authorise } from '../middlewares/authMiddleware.js'
 
 const router = express.Router()
@@ -26,5 +32,8 @@ router.get('/buyers',                 getAllBuyers)
 router.put('/users/:id/block',        toggleBlockUser)
 router.get('/orders',                 getAllOrders)
 router.patch('/orders/:id/status',    updateOrderStatus)
+// Routes mein add karo (export default se pehle)
+router.get('/categories/additional-details',       getAdditionalDetailsForAdmin)
+router.post('/categories/additional-details',      upsertAdditionalDetails)
 
 export default router

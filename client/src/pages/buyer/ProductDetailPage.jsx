@@ -764,10 +764,22 @@ export default function ProductDetailPage() {
           <DeliveryOptions />
 
           {/* Description */}
-          <div style={{marginBottom:'16px',padding:'16px',background:'#F8FAFC',borderRadius:'10px',border:'1px solid #F1F5F9'}}>
-            <h3 style={{fontSize:'12px',fontWeight:'800',color:'#0F172A',margin:'0 0 10px',textTransform:'uppercase',letterSpacing:'0.06em'}}>Product Description</h3>
-            <p style={{fontSize:'13px',color:'#64748B',lineHeight:'1.8',margin:0}}>{product.description}</p>
-          </div>
+        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+  {product.description?.split('\n').map((item, index) => (
+    item.trim() && (
+      <span
+        key={index}
+        style={{
+          fontSize:'14px',
+          color:'#282C3F',
+          lineHeight:'22px'
+        }}
+      >
+        {item}
+      </span>
+    )
+  ))}
+</div>
 
           {/* Additional Details */}
           {additionalEntries.length>0&&(

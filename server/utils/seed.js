@@ -835,7 +835,85 @@ await AdditionalDetail.insertMany([
   { categoryId: women._id, itemTypeId: womenWestern._id,   isActive: true, fields: [{name:'materialComposition',label:'Material Composition',type:'select',options:MATERIAL,sortOrder:0},{name:'sleeveType',label:'Sleeve Type',type:'select',options:SLEEVE,sortOrder:1},{name:'length',label:'Length',type:'select',options:LENGTH,sortOrder:2},{name:'neckStyle',label:'Neck Style',type:'select',options:NECK,sortOrder:3},{name:'pattern',label:'Pattern',type:'select',options:PATTERN,sortOrder:4},{name:'fitType',label:'Fit Type',type:'select',options:FIT,sortOrder:5},{name:'style',label:'Style',type:'select',options:STYLE,sortOrder:6},{name:'careInstructions',label:'Care Instructions',type:'select',options:CARE,sortOrder:7},{name:'countryOfOrigin',label:'Country of Origin',type:'select',options:ORIGIN,sortOrder:8}] },
   { categoryId: women._id, itemTypeId: womenShoes._id,     isActive: true, fields: [{name:'materialComposition',label:'Upper Material',type:'select',options:SHOE_MAT,sortOrder:0},{name:'soleType',label:'Sole Type',type:'select',options:SOLE,sortOrder:1},{name:'closureType',label:'Closure Type',type:'select',options:SHOE_CLOSE,sortOrder:2},{name:'occasionType',label:'Occasion Type',type:'select',options:SHOE_OCC,sortOrder:3},{name:'countryOfOrigin',label:'Country of Origin',type:'select',options:ORIGIN,sortOrder:4}] },
   { categoryId: women._id, itemTypeId: womenJewellery._id, isActive: true, fields: [{name:'materialComposition',label:'Material / Metal',type:'select',options:JWEL_MAT,sortOrder:0},{name:'plating',label:'Plating',type:'select',options:JWEL_PLATE,sortOrder:1},{name:'gemstone',label:'Gemstone / Stone',type:'select',options:GEMSTONE,sortOrder:2},{name:'occasionType',label:'Occasion Type',type:'select',options:JWEL_OCC,sortOrder:3},{name:'countryOfOrigin',label:'Country of Origin',type:'select',options:ORIGIN,sortOrder:4}] },
-  { categoryId: kids._id,  itemTypeId: kidsClothing._id,   isActive: true, fields: [{name:'materialComposition',label:'Material Composition',type:'select',options:MATERIAL,sortOrder:0},{name:'sleeveType',label:'Sleeve Type',type:'select',options:SLEEVE,sortOrder:1},{name:'pattern',label:'Pattern',type:'select',options:PATTERN,sortOrder:2},{name:'style',label:'Style',type:'select',options:STYLE,sortOrder:3},{name:'careInstructions',label:'Care Instructions',type:'select',options:CARE,sortOrder:4},{name:'countryOfOrigin',label:'Country of Origin',type:'select',options:ORIGIN,sortOrder:5}] },
+{ categoryId: kids._id,  itemTypeId: kidsClothing._id,   isActive: true, fields: [{name:'materialComposition',label:'Material Composition',type:'select',options:MATERIAL,sortOrder:0},{name:'sleeveType',label:'Sleeve Type',type:'select',options:SLEEVE,sortOrder:1},{name:'pattern',label:'Pattern',type:'select',options:PATTERN,sortOrder:2},{name:'style',label:'Style',type:'select',options:STYLE,sortOrder:3},{name:'careInstructions',label:'Care Instructions',type:'select',options:CARE,sortOrder:4},{name:'countryOfOrigin',label:'Country of Origin',type:'select',options:ORIGIN,sortOrder:5}] },
+// ADD THESE to the AdditionalDetail.insertMany array in seed.js
+
+  // ── Men → Sports & Gym ──────────────────────────────────────
+  { categoryId: men._id, itemTypeId: menSports._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Material Composition', type: 'select', options: ['100% Polyester', 'Cotton', 'Nylon', 'Spandex', 'Dri-FIT', 'Cotton Blend', 'Blended', 'Other'], sortOrder: 0 },
+    { name: 'sleeveType',          label: 'Sleeve Type',          type: 'select', options: SLEEVE,   sortOrder: 1 },
+    { name: 'pattern',             label: 'Pattern',              type: 'select', options: PATTERN,  sortOrder: 2 },
+    { name: 'fitType',             label: 'Fit Type',             type: 'select', options: FIT,      sortOrder: 3 },
+    { name: 'style',               label: 'Style',                type: 'select', options: ['Casual', 'Sports', 'Gym', 'Running', 'Yoga', 'Compression', 'Other'], sortOrder: 4 },
+    { name: 'careInstructions',    label: 'Care Instructions',    type: 'select', options: CARE,     sortOrder: 5 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin',    type: 'select', options: ORIGIN,   sortOrder: 6 },
+  ]},
+
+  // ── Men → Innerwear ─────────────────────────────────────────
+  { categoryId: men._id, itemTypeId: menInnerwear._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Material Composition', type: 'select', options: MATERIAL, sortOrder: 0 },
+    { name: 'pattern',             label: 'Pattern',              type: 'select', options: PATTERN,  sortOrder: 1 },
+    { name: 'fitType',             label: 'Fit Type',             type: 'select', options: FIT,      sortOrder: 2 },
+    { name: 'careInstructions',    label: 'Care Instructions',    type: 'select', options: CARE,     sortOrder: 3 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin',    type: 'select', options: ORIGIN,   sortOrder: 4 },
+  ]},
+
+  // ── Women → Watches ─────────────────────────────────────────
+  { categoryId: women._id, itemTypeId: womenWatches._id, isActive: true, fields: [
+    { name: 'materialType',    label: 'Strap / Case Material', type: 'select', options: WATCH_MAT,   sortOrder: 0 },
+    { name: 'watchGlass',      label: 'Watch Glass Type',      type: 'select', options: WATCH_GLASS, sortOrder: 1 },
+    { name: 'movement',        label: 'Movement / Display',    type: 'select', options: WATCH_MOV,   sortOrder: 2 },
+    { name: 'waterResistance', label: 'Water Resistance',      type: 'select', options: WATER_RES,   sortOrder: 3 },
+    { name: 'occasionType',    label: 'Occasion Type',         type: 'select', options: OCCASION,    sortOrder: 4 },
+  ]},
+
+  // ── Women → Accessories ─────────────────────────────────────
+  { categoryId: women._id, itemTypeId: womenAccessories._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Material Composition', type: 'select', options: ['Leather', 'Faux Leather', 'Canvas', 'Jute', 'Fabric', 'Plastic', 'Metal', 'Other'], sortOrder: 0 },
+    { name: 'pattern',             label: 'Pattern',              type: 'select', options: PATTERN,  sortOrder: 1 },
+    { name: 'style',               label: 'Style',                type: 'select', options: STYLE,    sortOrder: 2 },
+    { name: 'occasionType',        label: 'Occasion Type',        type: 'select', options: OCCASION, sortOrder: 3 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin',    type: 'select', options: ORIGIN,   sortOrder: 4 },
+  ]},
+
+  // ── Women → Sports ──────────────────────────────────────────
+  { categoryId: women._id, itemTypeId: womenSports._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Material Composition', type: 'select', options: ['100% Polyester', 'Cotton', 'Nylon', 'Spandex', 'Dri-FIT', 'Cotton Blend', 'Blended', 'Other'], sortOrder: 0 },
+    { name: 'sleeveType',          label: 'Sleeve Type',          type: 'select', options: SLEEVE,   sortOrder: 1 },
+    { name: 'pattern',             label: 'Pattern',              type: 'select', options: PATTERN,  sortOrder: 2 },
+    { name: 'fitType',             label: 'Fit Type',             type: 'select', options: FIT,      sortOrder: 3 },
+    { name: 'style',               label: 'Style',                type: 'select', options: ['Sports', 'Gym', 'Yoga', 'Running', 'Compression', 'Casual', 'Other'], sortOrder: 4 },
+    { name: 'careInstructions',    label: 'Care Instructions',    type: 'select', options: CARE,     sortOrder: 5 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin',    type: 'select', options: ORIGIN,   sortOrder: 6 },
+  ]},
+
+  // ── Women → Nightwear ───────────────────────────────────────
+  { categoryId: women._id, itemTypeId: womenNightwear._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Material Composition', type: 'select', options: MATERIAL, sortOrder: 0 },
+    { name: 'sleeveType',          label: 'Sleeve Type',          type: 'select', options: SLEEVE,   sortOrder: 1 },
+    { name: 'pattern',             label: 'Pattern',              type: 'select', options: PATTERN,  sortOrder: 2 },
+    { name: 'fitType',             label: 'Fit Type',             type: 'select', options: FIT,      sortOrder: 3 },
+    { name: 'careInstructions',    label: 'Care Instructions',    type: 'select', options: CARE,     sortOrder: 4 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin',    type: 'select', options: ORIGIN,   sortOrder: 5 },
+  ]},
+
+  // ── Women → Innerwear ───────────────────────────────────────
+  { categoryId: women._id, itemTypeId: womenInnerwear._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Material Composition', type: 'select', options: MATERIAL, sortOrder: 0 },
+    { name: 'pattern',             label: 'Pattern',              type: 'select', options: PATTERN,  sortOrder: 1 },
+    { name: 'fitType',             label: 'Fit Type',             type: 'select', options: FIT,      sortOrder: 2 },
+    { name: 'careInstructions',    label: 'Care Instructions',    type: 'select', options: CARE,     sortOrder: 3 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin',    type: 'select', options: ORIGIN,   sortOrder: 4 },
+  ]},
+
+  // ── Kids → Shoes ────────────────────────────────────────────
+  { categoryId: kids._id, itemTypeId: kidsShoes._id, isActive: true, fields: [
+    { name: 'materialComposition', label: 'Upper Material',    type: 'select', options: SHOE_MAT,   sortOrder: 0 },
+    { name: 'soleType',            label: 'Sole Type',         type: 'select', options: SOLE,       sortOrder: 1 },
+    { name: 'closureType',         label: 'Closure Type',      type: 'select', options: SHOE_CLOSE, sortOrder: 2 },
+    { name: 'occasionType',        label: 'Occasion Type',     type: 'select', options: SHOE_OCC,   sortOrder: 3 },
+    { name: 'countryOfOrigin',     label: 'Country of Origin', type: 'select', options: ORIGIN,     sortOrder: 4 },
+  ]},
 ])
 console.log('✅  Additional details inserted')
 

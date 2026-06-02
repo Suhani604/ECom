@@ -5,8 +5,8 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import cloudinary from '../config/cloudinary.js'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-const toNum   = (v, fallback = 0)   => { const n = parseFloat(v);   return isNaN(n) ? fallback : n }
-const toInt   = (v, fallback = 0)   => { const n = parseInt(v);     return isNaN(n) ? fallback : n }
+const toNum   = (v, fallback = 0)    => { const n = parseFloat(v); return isNaN(n) ? fallback : n }
+const toInt   = (v, fallback = 0)    => { const n = parseInt(v);   return isNaN(n) ? fallback : n }
 const toBool  = (v, fallback = true) => v === undefined ? fallback : v === 'true' || v === true
 
 // ─── GET ALL PRODUCTS (public) ────────────────────────────────────────────────
@@ -49,7 +49,7 @@ export const getProducts = async (req, res) => {
       'Jewellery': ['jewel', 'necklace', 'earring', 'ring', 'bangle'],
     }
 
-    const keywords      = KEYWORD_MAP[search] || [search.toLowerCase()]
+    const keywords       = KEYWORD_MAP[search] || [search.toLowerCase()]
     const keywordRegexes = keywords.map(kw => ({ title: { $regex: kw, $options: 'i' } }))
 
     filter.$or = [
@@ -67,7 +67,7 @@ export const getProducts = async (req, res) => {
 
   const [products, total] = await Promise.all([
     Product.find(filter)
-      .populate('seller',      'name sellerDetails.businessName')
+      .populate('seller',      'name email')
       .populate('category',    'name')
       .populate('itemType',    'name')
       .populate('subItemType', 'name')
@@ -107,24 +107,23 @@ export const createProduct = async (req, res) => {
       variants,
       additionalDetails,
       keepImages,
-      // shipping fields from form
       courierPartner,
       codAvailable,
       freeShipping,
     } = req.body
 
-    // ── NaN fix: always parse numbers explicitly ──────────────────────────
+    // ── Parse numbers ─────────────────────────────────────────────────────
     const mrp                 = toNum(req.body.mrp)
     const sellingPrice        = toNum(req.body.sellingPrice)
-    const weight              = toNum(req.body.weight, 0)         // jewellery net weight (grams)
-    const shippingWeight      = toInt(req.body.shippingWeight, 500) // grams
-    const packagingWeight     = toInt(req.body.packagingWeight, 60) // grams
+    const weight              = toNum(req.body.weight, 0)
+    const shippingWeight      = toInt(req.body.shippingWeight, 500)
+    const packagingWeight     = toInt(req.body.packagingWeight, 60)
     const length              = toNum(req.body.length, 0)
     const width               = toNum(req.body.width, 0)
     const height              = toNum(req.body.height, 0)
     const extraShippingCharge = toNum(req.body.extraShippingCharge, 0)
 
-    // ── Validate required numbers ─────────────────────────────────────────
+    // ── Validate numbers ──────────────────────────────────────────────────
     if (!mrp || mrp <= 0)
       return errorResponse(res, 'MRP must be a valid number greater than 0', 400)
     if (!sellingPrice || sellingPrice <= 0)
@@ -132,13 +131,13 @@ export const createProduct = async (req, res) => {
     if (sellingPrice > mrp)
       return errorResponse(res, 'Selling price cannot be greater than MRP', 400)
 
-    // ── Validate required strings ─────────────────────────────────────────
-    if (!title?.trim())       return errorResponse(res, 'Title is required', 400)
+    // ── Validate required fields ──────────────────────────────────────────
+    if (!title?.trim())   return errorResponse(res, 'Title is required', 400)
     if (!description?.trim()) return errorResponse(res, 'Description is required', 400)
-    if (!category)            return errorResponse(res, 'Category is required', 400)
-    if (!itemType)            return errorResponse(res, 'Item type is required', 400)
-    if (!subItemType)         return errorResponse(res, 'Sub item type is required', 400)
-    if (!itemName)            return errorResponse(res, 'Item name is required', 400)
+    if (!category)        return errorResponse(res, 'Category is required', 400)
+    if (!itemType)        return errorResponse(res, 'Item type is required', 400)
+    if (!subItemType)     return errorResponse(res, 'Sub item type is required', 400)
+    if (!itemName)        return errorResponse(res, 'Item name is required', 400)
 
     // ── Variants ──────────────────────────────────────────────────────────
     const parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants
@@ -151,16 +150,15 @@ export const createProduct = async (req, res) => {
 
     const imageUrls = []
     for (const file of req.files) {
-      // ✅ NAYA — buffer se direct Cloudinary upload
-const result = await new Promise((resolve, reject) => {
-  cloudinary.uploader.upload_stream(
-    { folder: 'voguecart/products' },
-    (error, result) => {
-      if (error) reject(error)
-      else resolve(result)
-    }
-  ).end(file.buffer)
-})
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: 'voguecart/products' },
+          (error, result) => {
+            if (error) reject(error)
+            else resolve(result)
+          }
+        ).end(file.buffer)
+      })
       imageUrls.push(result.secure_url)
     }
 
@@ -172,7 +170,7 @@ const result = await new Promise((resolve, reject) => {
       ? JSON.parse(additionalDetails)
       : (additionalDetails || {})
 
-    // ── Volumetric weight (L×B×H ÷ 5000 cm³, convert to grams) ──────────
+    // ── Volumetric weight (L×B×H ÷ 5000, convert to grams) ───────────────
     const volumetricWeightG = length && width && height
       ? Math.round((length * width * height) / 5)
       : 0
@@ -181,7 +179,10 @@ const result = await new Promise((resolve, reject) => {
     // ── Create ────────────────────────────────────────────────────────────
     const product = await Product.create({
       seller:      req.user._id,
-      category,    itemType, subItemType, itemName,
+      category,
+      itemType,
+      subItemType,
+      itemName,
       title:       title.trim(),
       description: description.trim(),
       brand:       brand || '',
@@ -192,7 +193,6 @@ const result = await new Promise((resolve, reject) => {
       gstPercent:  toNum(gstPercent, 5),
       weight,
 
-      // shipping
       shippingWeight:      chargeableWeight || shippingWeight,
       packagingWeight,
       length, width, height,
@@ -228,16 +228,25 @@ export const updateProduct = async (req, res) => {
       courierPartner, codAvailable, freeShipping,
     } = req.body
 
-    // ── NaN fix: parse numbers ────────────────────────────────────────────
-    const mrp                 = req.body.mrp               !== undefined ? toNum(req.body.mrp)               : product.mrp
-    const sellingPrice        = req.body.sellingPrice       !== undefined ? toNum(req.body.sellingPrice)       : product.sellingPrice
-    const weight              = req.body.weight             !== undefined ? toNum(req.body.weight, 0)          : product.weight
-    const shippingWeight      = req.body.shippingWeight     !== undefined ? toInt(req.body.shippingWeight, 500): product.shippingWeight
-    const packagingWeight     = req.body.packagingWeight    !== undefined ? toInt(req.body.packagingWeight, 60) : product.packagingWeight
-    const length              = req.body.length             !== undefined ? toNum(req.body.length, 0)          : product.length
-    const width               = req.body.width              !== undefined ? toNum(req.body.width, 0)           : product.width
-    const height              = req.body.height             !== undefined ? toNum(req.body.height, 0)          : product.height
-    const extraShippingCharge = req.body.extraShippingCharge!== undefined ? toNum(req.body.extraShippingCharge, 0): product.extraShippingCharge
+    // ── Validate all 4 category levels are present ────────────────────────
+    // These MUST always be sent from the frontend and must be valid ObjectIds.
+    // Without this, Mongoose throws "Cast to ObjectId failed" if the product
+    // was saved before the 4-level category system was introduced.
+    if (!category)    return errorResponse(res, 'Category is required', 400)
+    if (!itemType)    return errorResponse(res, 'Item type is required', 400)
+    if (!subItemType) return errorResponse(res, 'Sub item type is required', 400)
+    if (!itemName)    return errorResponse(res, 'Item name is required', 400)
+
+    // ── Parse numbers ─────────────────────────────────────────────────────
+    const mrp                 = req.body.mrp                !== undefined ? toNum(req.body.mrp)                : product.mrp
+    const sellingPrice        = req.body.sellingPrice        !== undefined ? toNum(req.body.sellingPrice)        : product.sellingPrice
+    const weight              = req.body.weight              !== undefined ? toNum(req.body.weight, 0)           : product.weight
+    const shippingWeight      = req.body.shippingWeight      !== undefined ? toInt(req.body.shippingWeight, 500) : product.shippingWeight
+    const packagingWeight     = req.body.packagingWeight     !== undefined ? toInt(req.body.packagingWeight, 60) : product.packagingWeight
+    const length              = req.body.length              !== undefined ? toNum(req.body.length, 0)           : product.length
+    const width               = req.body.width               !== undefined ? toNum(req.body.width, 0)            : product.width
+    const height              = req.body.height              !== undefined ? toNum(req.body.height, 0)           : product.height
+    const extraShippingCharge = req.body.extraShippingCharge !== undefined ? toNum(req.body.extraShippingCharge, 0) : product.extraShippingCharge
 
     if (isNaN(mrp) || mrp <= 0)
       return errorResponse(res, 'MRP must be a valid number greater than 0', 400)
@@ -252,14 +261,14 @@ export const updateProduct = async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const result = await new Promise((resolve, reject) => {
-  cloudinary.uploader.upload_stream(
-    { folder: 'voguecart/products' },
-    (error, result) => {
-      if (error) reject(error)
-      else resolve(result)
-    }
-  ).end(file.buffer)
-})
+          cloudinary.uploader.upload_stream(
+            { folder: 'voguecart/products' },
+            (error, result) => {
+              if (error) reject(error)
+              else resolve(result)
+            }
+          ).end(file.buffer)
+        })
         imageUrls.push(result.secure_url)
       }
     }
@@ -273,14 +282,15 @@ export const updateProduct = async (req, res) => {
       : 0
     const chargeableWeight = Math.max(shippingWeight, volumetricWeightG)
 
-    // ── Apply updates ─────────────────────────────────────────────────────
-    if (category)    product.category    = category
-    if (itemType)    product.itemType    = itemType
-    if (subItemType) product.subItemType = subItemType
-    if (itemName)    product.itemName    = itemName
-    if (title)       product.title       = title.trim()
-    if (description) product.description = description.trim()
-    if (brand !== undefined) product.brand = brand
+    // ── Apply all updates ─────────────────────────────────────────────────
+    product.category    = category      // always overwrite — fixes old string values
+    product.itemType    = itemType      // always overwrite — fixes old string values
+    product.subItemType = subItemType   // always overwrite — fixes old string values
+    product.itemName    = itemName      // always overwrite — fixes old string values
+
+    if (title)               product.title       = title.trim()
+    if (description)         product.description = description.trim()
+    if (brand !== undefined) product.brand       = brand
 
     product.mrp                 = mrp
     product.sellingPrice        = sellingPrice
@@ -370,6 +380,8 @@ export const adminGetProducts = async (req, res) => {
       .populate('seller',      'name email')
       .populate('category',    'name')
       .populate('itemType',    'name')
+      .populate('subItemType', 'name')
+      .populate('itemName',    'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -400,7 +412,7 @@ export const adminUpdateProductStatus = async (req, res) => {
 // ─── DEBUG (remove in production) ────────────────────────────────────────────
 export const debugProducts = async (req, res) => {
   const populated = await Product.find({ status: 'active' })
-    .populate('itemName', 'name')
+    .populate('itemName',    'name')
     .populate('subItemType', 'name')
     .select('title itemName subItemType')
 
