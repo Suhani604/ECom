@@ -3,7 +3,7 @@ import {
   createOrder, createRazorpayOrder, verifyPayment,
   getMyOrders, getOrderById, cancelOrder, requestReturn,
   getAddresses, addAddress, updateAddress, deleteAddress,
-  updateOrderStatus, checkPincode,   // ← ADD checkPincode here
+  updateOrderStatus, checkPincode, calculateShippingRoute,  // ← ADD checkPincode here
 } from '../controllers/orderController.js'
 import { authenticate, authorise } from '../middlewares/authMiddleware.js'
 
@@ -27,5 +27,5 @@ router.put('/:id/cancel',      authenticate, authorise('buyer'),          cancel
 router.put('/:id/return',      authenticate, authorise('buyer'),          requestReturn)
 router.post('/:id/razorpay',   authenticate, authorise('buyer'),          createRazorpayOrder)
 router.put('/:id/status',      authenticate, authorise('admin', 'seller'), updateOrderStatus)
-
+router.post('/calculate-shipping', calculateShippingRoute)
 export default router
