@@ -20,6 +20,7 @@ import buyerRoutes       from './routes/buyerRoutes.js'
 import categoryRoutes    from './routes/categoryRoutes.js'   // 🆕
 import reviewRoutes from './routes/reviewRoutes.js'
 import bannerRoutes from './routes/bannerRoutes.js'
+import deliveryRoutes from './routes/deliveryRoutes.js'
 
 
 const app    = express()
@@ -30,6 +31,7 @@ const __dirname  = path.dirname(__filename)
 
 connectDB()
 export const io = initSocket(server)
+app.set('io', io)
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -61,10 +63,9 @@ app.use('/api/products', productRoutes)
 app.use('/api/orders',   orderRoutes)
 app.use('/api/buyer',    buyerRoutes)
 app.use('/api/reviews', reviewRoutes)
-// ...
 app.use('/api/banners', bannerRoutes)
-// server.js
 app.use('/api/categories', categoryRoutes)   // ✅ was: /api
+app.use('/api/delivery', deliveryRoutes)
 
 app.use((req, res) => res.status(404).json({ success: false, message: `Route ${req.method} ${req.url} not found` }))
 app.use(errorHandler)

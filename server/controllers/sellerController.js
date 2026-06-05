@@ -455,8 +455,8 @@ export const getSellerOrders = async (req, res) => {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
-      .populate('buyer', 'name email phone')
-      .sort({ createdAt: -1 })
+  .populate('buyer', 'name email phone')
+  .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(limit),
     Order.countDocuments(filter),

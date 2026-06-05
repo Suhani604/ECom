@@ -57,6 +57,13 @@ const orderSchema = new mongoose.Schema({
   trackingUrl:  { type: String, default: '' },
   trackingNote: { type: String, default: '' },
 
+  // ── Delivery Boy ──────────────────────────────────────────
+deliveryBoy:   { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryBoy' },
+deliveryOTP:   { type: String, default: '' },
+pickedUpAt:    { type: Date },
+deliveredAt:   { type: Date },
+codCollected:  { type: Boolean, default: false },
+
   // ── Status ────────────────────────────────────────────────────────────────
   status: {
     type: String,

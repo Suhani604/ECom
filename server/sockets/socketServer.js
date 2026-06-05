@@ -35,6 +35,25 @@ export const initSocket = (server) => {
       socket.join(`user:${userId}`)
       io.to('role:admin').emit('online:count', { count: getOnlineCount() })
     }
+    
+    // Delivery boy apna room join kare
+if (role === 'delivery') {
+  socket.join(`delivery:${userId}`)
+  socket.join('role:delivery')
+}
+
+// Order tracking room join karna
+socket.on('track:order', ({ orderId }) => {
+  socket.join(`order_tracking_${orderId}`)
+})
+
+// Delivery boy location update
+socket.on('delivery:location_update', ({ orderId, lat, lng }) => {
+  io.to(`order_tracking_${orderId}`).emit('delivery:location', {
+    lat, lng, time: new Date()
+  })
+})
+
 
     socket.on('disconnect', () => {
       const uid = socketUserMap.get(socket.id)

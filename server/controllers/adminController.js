@@ -5,8 +5,122 @@ import { successResponse, errorResponse, paginatedResponse } from '../utils/resp
 import { io }   from '../server.js'
 import {
   emitSellerApproved, emitSellerRejected,
-  emitProductApproved, emitProductRejected,
+  emitProductApproved, emitProductRejected,emitDeliveryAssigned
 } from '../sockets/socketEmit.js'
+import DeliveryPartner from '../models/DeliveryPartner.js'
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET ALL DELIVERY PARTNERS
+// GET /api/admin/delivery-partners
+// ═══════════════════════════════════════════════════════════════════════════════
+export const getAllDeliveryPartners = async (req, res) => {
+  try {
+    const partners = await DeliveryPartner.find()
+      .select('-password')
+      .sort({ createdAt: -1 })
+    return successResponse(res, 'Delivery partners fetched', { partners })
+  } catch (err) {
+    return errorResponse(res, err.message, 500)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// APPROVE DELIVERY PARTNER
+// PUT /api/admin/delivery-partners/:id/approve
+// ═══════════════════════════════════════════════════════════════════════════════
+export const approveDeliveryPartner = async (req, res) => {
+  try {
+    const dp = await DeliveryPartner.findById(req.params.id)
+    if (!dp) return errorResponse(res, 'Delivery partner not found', 404)
+    dp.isApproved = true
+    await dp.save()
+    return successResponse(res, `${dp.name} approved successfully`)
+  } catch (err) {
+    return errorResponse(res, err.message, 500)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ASSIGN DELIVERY PARTNER TO ORDER (by pincode/area match)
+// PUT /api/admin/orders/:id/assign-delivery
+// ═══════════════════════════════════════════════════════════════════════════════
+export const assignDeliveryPartner = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('buyer', 'name phone')
+    if (!order) return errorResponse(res, 'Order not found', 404)
+
+    const deliveryPincode = order.deliveryAddress?.pincode
+
+    // Area-based auto assign — same pincode first, then same city
+    let dp = await DeliveryPartner.findOne({
+      isApproved:  true,
+      isOnline:    true,
+      isAvailable: true,
+      'serviceArea.pincode': deliveryPincode,
+    })
+
+    // Fallback — same city
+    if (!dp) {
+      dp = await DeliveryPartner.findOne({
+        isApproved:  true,
+        isOnline:    true,
+        isAvailable: true,
+        'serviceArea.city': order.deliveryAddress?.city,
+      })
+    }
+
+    if (!dp) return errorResponse(res, 'No available delivery partner in this area', 404)
+
+    // Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString()
+
+    order.deliveryBoy  = dp._id
+    order.deliveryOTP  = otp
+    order.status       = 'shipped'
+    order.statusHistory.push({
+      status: 'shipped',
+      note: `Assigned to ${dp.name}`,
+      updatedAt: new Date(),
+    })
+    await order.save()
+
+    // Mark partner as unavailable
+    dp.isAvailable = false
+    await dp.save()
+
+    // Real-time notify
+    const sellerId = order.items[0]?.seller
+    emitDeliveryAssigned(io, {
+      orderId:         order._id,
+      deliveryBoyId:   dp._id,
+      buyerId:         order.buyer._id,
+      sellerId,
+      deliveryBoyName: dp.name,
+    })
+
+    return successResponse(res, `Order assigned to ${dp.name}`, {
+      deliveryPartner: { name: dp.name, phone: dp.phone },
+      otp, // Admin ko dikhao OTP (for reference)
+    })
+  } catch (err) {
+    return errorResponse(res, err.message, 500)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET DELIVERY PARTNERS LIVE MAP DATA
+// GET /api/admin/delivery-partners/live
+// ═══════════════════════════════════════════════════════════════════════════════
+export const getLiveDeliveryMap = async (req, res) => {
+  try {
+    const partners = await DeliveryPartner.find({ isOnline: true })
+      .select('name phone currentLocation isAvailable serviceArea')
+    return successResponse(res, 'Live partners fetched', { partners })
+  } catch (err) {
+    return errorResponse(res, err.message, 500)
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD STATS
@@ -298,8 +412,8 @@ export const getAllOrders = async (req, res) => {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
-      .populate('buyer', 'name email phone')
-      .sort({ createdAt: -1 })
+  .populate('buyer', 'name email phone')
+  .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(limit),
     Order.countDocuments(filter),

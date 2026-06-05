@@ -82,3 +82,61 @@ export const emitOutForDelivery = (io, { orderId, buyerId, trackingUrl }) => {
     timestamp: new Date(),
   })
 }
+
+// ── Delivery Boy Events ───────────────────────────────────
+
+export const emitDeliveryAssigned = (io, { orderId, deliveryBoyId, buyerId, sellerId, deliveryBoyName }) => {
+  // Delivery boy ko notify karo
+  emitToUser(io, deliveryBoyId?.toString(), 'delivery:assigned', {
+    orderId,
+    message: `New delivery assigned!`,
+    time: new Date(),
+  })
+  // Buyer ko notify karo
+  emitToUser(io, buyerId?.toString(), 'order:status_update', {
+    orderId,
+    status: 'shipped',
+    message: `Your order is on the way! Delivery by ${deliveryBoyName}`,
+    time: new Date(),
+  })
+  // Admin ko notify karo
+  emitToAdmins(io, 'delivery:assigned', { orderId, deliveryBoyName, time: new Date() })
+}
+
+export const emitOrderPickedUp = (io, { orderId, buyerId, sellerId, deliveryBoyName }) => {
+  emitToUser(io, buyerId?.toString(), 'order:status_update', {
+    orderId,
+    status: 'out_for_delivery',
+    message: `🚚 Your order is out for delivery by ${deliveryBoyName}!`,
+    time: new Date(),
+  })
+  emitToUser(io, sellerId?.toString(), 'order:status_update', {
+    orderId,
+    status: 'out_for_delivery',
+    message: `Order picked up by ${deliveryBoyName}`,
+    time: new Date(),
+  })
+  emitToAdmins(io, 'order:picked_up', { orderId, time: new Date() })
+}
+
+export const emitOrderDelivered = (io, { orderId, buyerId, sellerId }) => {
+  emitToUser(io, buyerId?.toString(), 'order:status_update', {
+    orderId,
+    status: 'delivered',
+    message: `✅ Your order has been delivered!`,
+    time: new Date(),
+  })
+  emitToUser(io, sellerId?.toString(), 'order:status_update', {
+    orderId,
+    status: 'delivered',
+    message: `Order delivered successfully!`,
+    time: new Date(),
+  })
+  emitToAdmins(io, 'order:delivered', { orderId, time: new Date() })
+}
+
+export const emitDeliveryLocationUpdate = (io, { deliveryBoyId, orderId, lat, lng }) => {
+  io.to(`order_tracking_${orderId}`).emit('delivery:location', {
+    deliveryBoyId, lat, lng, time: new Date(),
+  })
+}

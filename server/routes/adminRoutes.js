@@ -4,7 +4,10 @@ import {
   getAllSellers, getSellerById, approveSeller, rejectSeller, suspendSeller,
   getAllProducts, approveProduct, rejectProduct,
   getAllBuyers, toggleBlockUser,
-  getAllOrders, updateOrderStatus,
+  getAllOrders, updateOrderStatus, getAllDeliveryPartners,
+  approveDeliveryPartner,
+  assignDeliveryPartner,
+  getLiveDeliveryMap,
 } from '../controllers/adminController.js'
 
 // ← Alag import karo categoryController se
@@ -35,5 +38,10 @@ router.patch('/orders/:id/status',    updateOrderStatus)
 // Routes mein add karo (export default se pehle)
 router.get('/categories/additional-details',       getAdditionalDetailsForAdmin)
 router.post('/categories/additional-details',      upsertAdditionalDetails)
+// ── Delivery Partner routes ───────────────────────────────────────────────────
+router.get('/delivery-partners',              getAllDeliveryPartners)
+router.get('/delivery-partners/live',         getLiveDeliveryMap)
+router.put('/delivery-partners/:id/approve',  approveDeliveryPartner)
+router.put('/orders/:id/assign-delivery',     assignDeliveryPartner)
 
 export default router
