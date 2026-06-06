@@ -758,7 +758,7 @@ export default function ProductDetailPage() {
       <div className="main-product-grid" style={{maxWidth:'1200px',margin:'0 auto',padding:'24px 20px 90px',display:'grid',gridTemplateColumns:'min(50%, 500px) 1fr',gap:'32px',alignItems:'start'}}>
 
         {/* LEFT: sticky image */}
-        <div style={{position:'sticky',top:'72px',display:'flex',flexDirection:'row',gap:'12px'}}>
+        <div style={{position:'static',display:'flex',flexDirection:'row',gap:'12px'}}>
           {product.images?.length>1&&(
             <div style={{display:'flex',flexDirection:'column',gap:'10px',width:'70px',flexShrink:0}}>
               {product.images.map((img,i)=>(

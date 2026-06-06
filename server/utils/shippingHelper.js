@@ -65,11 +65,38 @@ export function chargeableWeight({ itemWeightG = 500, packagingWeightG = 60, l =
 }
 
 // ══════════════════════════════════════════════════════════════
+// FALLBACK COURIER  (used when no active couriers in DB)
+// ══════════════════════════════════════════════════════════════
+const FALLBACK_COURIER = {
+  key:              'standard',
+  label:            'Standard Delivery',
+  codChargePercent: 1.5,
+  codChargeFlat:    25,
+  zones: {
+    sameCity: { upTo500g: 30,  per500gExtra: 8,  deliveryDays: 1 },
+    metro:    { upTo500g: 40,  per500gExtra: 10, deliveryDays: 2 },
+    nonMetro: { upTo500g: 55,  per500gExtra: 12, deliveryDays: 4 },
+    remote:   { upTo500g: 80,  per500gExtra: 20, deliveryDays: 7 },
+  },
+}
+
+const FALLBACK_PLATFORM_CHARGES = {
+  commissionPercent:    5,
+  codHandlingFlat:      10,
+  gstOnShippingPercent: 18,
+  paymentGatewayPercent: 2,
+  tdsPercent:           1,
+  holdPeriodDays:       7,
+}
+
+// ══════════════════════════════════════════════════════════════
 // CHEAPEST COURIER  (from DB, active only)
 // ══════════════════════════════════════════════════════════════
 export async function getCheapestCourier(zone) {
   const couriers = await Courier.find({ isActive: true })
-  if (!couriers.length) throw new Error('No active couriers in DB')
+
+  // ── Fallback: no active couriers in DB → use default rates ──
+  if (!couriers.length) return FALLBACK_COURIER
 
   let best = null
   let bestRate = Infinity
@@ -110,34 +137,34 @@ export async function calculateShipping({
   if (!zoneData) throw new Error(`Zone "${zone}" not found for courier "${courier.key}"`)
 
   // ── Weight & base rate ────────────────────────────────────
-  const weightG    = chargeableWeight({ itemWeightG, packagingWeightG, l, w, h })
-  const slabs      = Math.ceil(weightG / 500)            // 1 slab = 500g
+  const weightG     = chargeableWeight({ itemWeightG, packagingWeightG, l, w, h })
+  const slabs       = Math.ceil(weightG / 500)            // 1 slab = 500g
   const shippingFee = zoneData.upTo500g + Math.max(0, slabs - 1) * zoneData.per500gExtra
 
-  // ── Platform charges from DB ──────────────────────────────
-  const pc = await PlatformCharges.findOne({ key: 'default' })
-  if (!pc) throw new Error('PlatformCharges config missing in DB')
+  // ── Platform charges from DB (fallback if missing) ────────
+  let pc = await PlatformCharges.findOne({ key: 'default' })
+  if (!pc) pc = FALLBACK_PLATFORM_CHARGES
 
   // ── COD charge ────────────────────────────────────────────
   let codCharge = 0
   if (isCOD) {
     const byPercent = Math.round(sellingPrice * courier.codChargePercent / 100)
-    codCharge = Math.max(courier.codChargeFlat, byPercent) + pc.codHandlingFlat
+    codCharge = Math.max(courier.codChargeFlat, byPercent) + (pc.codHandlingFlat || 10)
   }
 
   // ── Platform commission ───────────────────────────────────
-  const platformCommission = Math.round(sellingPrice * pc.commissionPercent / 100)
+  const platformCommission = Math.round(sellingPrice * (pc.commissionPercent || 5) / 100)
 
   // ── GST on shipping ───────────────────────────────────────
-  const gstOnShipping = Math.round(shippingFee * pc.gstOnShippingPercent / 100)
+  const gstOnShipping = Math.round(shippingFee * (pc.gstOnShippingPercent || 18) / 100)
 
   // ── Payment gateway fee (only for prepaid) ────────────────
   const paymentGatewayFee = isCOD
     ? 0
-    : Math.round(sellingPrice * pc.paymentGatewayPercent / 100)
+    : Math.round(sellingPrice * (pc.paymentGatewayPercent || 2) / 100)
 
   // ── TDS ───────────────────────────────────────────────────
-  const tds = Math.round(sellingPrice * pc.tdsPercent / 100)
+  const tds = Math.round(sellingPrice * (pc.tdsPercent || 1) / 100)
 
   // ── Total deducted from seller ────────────────────────────
   const totalDeducted = shippingFee + gstOnShipping + platformCommission + codCharge + paymentGatewayFee + tds
@@ -171,7 +198,7 @@ export async function calculateShipping({
     effectiveMarginPct,
     deliveryDays,
     deliveryDate,
-    holdPeriodDays:     pc.holdPeriodDays,
+    holdPeriodDays:     pc.holdPeriodDays || 7,
   }
 }
 
@@ -179,13 +206,13 @@ export async function calculateShipping({
 // REVERSE SHIPPING  (returns)
 // ══════════════════════════════════════════════════════════════
 export async function calculateReverseShipping(zone = 'nonMetro') {
-  const courier = await getCheapestCourier(zone)
+  const courier  = await getCheapestCourier(zone)
   const zoneData = courier.zones?.[zone]
   const base     = zoneData?.upTo500g || 55
   const reverse  = Math.round(base * 1.2)   // 20% surcharge for reverse
 
-  const pc = await PlatformCharges.findOne({ key: 'default' })
-  const gst = Math.round(reverse * (pc?.gstOnShippingPercent || 18) / 100)
+  const pc  = await PlatformCharges.findOne({ key: 'default' })
+  const gst = Math.round(reverse * ((pc?.gstOnShippingPercent || 18)) / 100)
 
   return {
     base,

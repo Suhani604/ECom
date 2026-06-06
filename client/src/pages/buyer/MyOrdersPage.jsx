@@ -133,7 +133,10 @@ function OrderInfoPanel({ order }) {
         <p style={{ fontSize: '10px', color: '#7C3AED', margin: '0 0 8px', fontWeight: '700', textTransform: 'uppercase' }}>🛍️ Items ({order.items?.length})</p>
         {order.items?.map((item, i) => (
           <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingTop: i > 0 ? '8px' : 0, borderTop: i > 0 ? '1px dashed #F1F5F9' : 'none', marginTop: i > 0 ? '8px' : 0 }}>
-            <img src={item.image || item.images?.[0] || ''} alt={item.title} style={{ width: '44px', height: '54px', objectFit: 'cover', borderRadius: '6px', background: '#F1F5F9', flexShrink: 0 }} onError={e => { e.target.src = '' }} />
+            <img src={item.image || item.images?.[0] || ''} alt={item.title}
+              style={{ width: '88px', height: '108px', objectFit: 'cover', borderRadius: '6px', background: '#F1F5F9', flexShrink: 0 }}
+              onError={e => { e.target.style.background = '#F1F5F9'; e.target.src = '' }}
+            />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
               <p style={{ fontSize: '11px', color: '#94A3B8', margin: '0 0 2px' }}>{item.size && `Size: ${item.size}`}{item.color && ` • ${item.color}`}</p>

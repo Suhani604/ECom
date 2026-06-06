@@ -81,9 +81,9 @@ export const createOrder = async (req, res) => {
     // ── Calculate shipping ─────────────────────────────────────────────────
     const buyerPincode     = deliveryAddress.pincode
     const zone           = detectZone(buyerPincode, SELLER_PINCODE)
-const firstProduct   = await Product.findById(orderItems[0].product)
-const itemWeightG    = firstProduct?.shippingWeight  || 500
-const packagingWeightG = firstProduct?.packagingWeight || 60
+    const firstProduct   = await Product.findById(orderItems[0].product)
+    const itemWeightG    = firstProduct?.shippingWeight  || 500
+    const packagingWeightG = firstProduct?.packagingWeight || 60
 
 const shipping = await calculateShipping({
   itemWeightG,
