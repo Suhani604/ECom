@@ -40,68 +40,25 @@ const TABS = [
 /* ── Tracking Pipeline ─────────────────────────────────────────────────────── */
 function TrackingPipeline({ status }) {
   if (['cancelled', 'return_requested', 'returned'].includes(status)) return null
-
   const currentIdx = STATUS_STEPS.indexOf(status)
-
   return (
-    <div style={{
-      padding: '14px 16px 12px',
-      borderTop: '1px solid #F1F5F9',
-      background: '#FAFBFF',
-    }}>
+    <div style={{ padding: '14px 16px 12px', borderTop: '1px solid #F1F5F9', background: '#FAFBFF' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative' }}>
-        {/* connector line behind circles */}
-        <div style={{
-          position: 'absolute',
-          top: '13px',
-          left: '13px',
-          right: '13px',
-          height: '2px',
-          background: '#E2E8F0',
-          zIndex: 0,
-        }} />
-        {/* filled connector up to current step */}
-        <div style={{
-          position: 'absolute',
-          top: '13px',
-          left: '13px',
-          width: currentIdx === 0
-            ? '0%'
-            : `calc(${(currentIdx / (STATUS_STEPS.length - 1)) * 100}% - 13px)`,
-          height: '2px',
-          background: '#7C3AED',
-          zIndex: 0,
-          transition: 'width 0.4s ease',
-        }} />
-
+        <div style={{ position: 'absolute', top: '13px', left: '13px', right: '13px', height: '2px', background: '#E2E8F0', zIndex: 0 }} />
+        <div style={{ position: 'absolute', top: '13px', left: '13px', width: currentIdx === 0 ? '0%' : `calc(${(currentIdx / (STATUS_STEPS.length - 1)) * 100}% - 13px)`, height: '2px', background: '#7C3AED', zIndex: 0, transition: 'width 0.4s ease' }} />
         {STATUS_STEPS.map((step, idx) => {
-          const done    = idx <= currentIdx
+          const done = idx <= currentIdx
           const current = idx === currentIdx
           return (
             <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, position: 'relative', zIndex: 1 }}>
-              <div style={{
-                width: '26px', height: '26px', borderRadius: '50%',
-                background: done ? '#7C3AED' : '#fff',
-                border: `2px solid ${done ? '#7C3AED' : '#E2E8F0'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.3s',
-                boxShadow: current ? '0 0 0 3px #EDE9FE' : 'none',
-              }}>
+              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: done ? '#7C3AED' : '#fff', border: `2px solid ${done ? '#7C3AED' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', boxShadow: current ? '0 0 0 3px #EDE9FE' : 'none' }}>
                 {done && (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 )}
               </div>
-              <p style={{
-                margin: '5px 0 0',
-                fontSize: '9px',
-                fontWeight: current ? '800' : '500',
-                color: done ? '#7C3AED' : '#CBD5E1',
-                textAlign: 'center',
-                lineHeight: 1.3,
-                maxWidth: '52px',
-              }}>
+              <p style={{ margin: '5px 0 0', fontSize: '9px', fontWeight: current ? '800' : '500', color: done ? '#7C3AED' : '#CBD5E1', textAlign: 'center', lineHeight: 1.3, maxWidth: '52px' }}>
                 {STEP_LABELS[step]}
               </p>
             </div>
@@ -112,7 +69,84 @@ function TrackingPipeline({ status }) {
   )
 }
 
-/* ── Star rating row (delivered orders) ────────────────────────────────────── */
+/* ── Order Info Expand Panel ───────────────────────────────────────────────── */
+function OrderInfoPanel({ order }) {
+  const addr = order.deliveryAddress || {}
+  const isCOD = order.paymentMethod === 'cod'
+  return (
+    <div style={{ background: '#F8FAFF', borderTop: '1px solid #EDE9FE', padding: '16px', animation: 'fadeIn 0.2s ease' }}>
+
+      {/* Order ID + Date */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div>
+          <p style={{ fontSize: '10px', color: '#94A3B8', margin: '0 0 2px', fontWeight: '600', textTransform: 'uppercase' }}>Order ID</p>
+          <p style={{ fontSize: '12px', color: '#0F172A', margin: 0, fontWeight: '700', fontFamily: 'monospace' }}>#{order._id.slice(-10).toUpperCase()}</p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: '10px', color: '#94A3B8', margin: '0 0 2px', fontWeight: '600', textTransform: 'uppercase' }}>Placed On</p>
+          <p style={{ fontSize: '12px', color: '#0F172A', margin: 0, fontWeight: '600' }}>
+            {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </p>
+        </div>
+      </div>
+
+      {/* Delivery Address */}
+      <div style={{ background: 'white', borderRadius: '10px', padding: '12px', marginBottom: '10px', border: '1px solid #EDE9FE' }}>
+        <p style={{ fontSize: '10px', color: '#7C3AED', margin: '0 0 6px', fontWeight: '700', textTransform: 'uppercase' }}>📍 Delivery Address</p>
+        <p style={{ fontSize: '13px', color: '#0F172A', margin: '0 0 2px', fontWeight: '700' }}>{addr.name}</p>
+        <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 2px' }}>{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
+        <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 2px' }}>{addr.city}, {addr.state} - {addr.pincode}</p>
+        <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>📞 {addr.phone}</p>
+      </div>
+
+      {/* Payment Info */}
+      <div style={{ background: 'white', borderRadius: '10px', padding: '12px', marginBottom: '10px', border: '1px solid #EDE9FE' }}>
+        <p style={{ fontSize: '10px', color: '#7C3AED', margin: '0 0 8px', fontWeight: '700', textTransform: 'uppercase' }}>💳 Payment</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '12px', color: '#64748B' }}>Method</span>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A' }}>{isCOD ? '💵 Cash on Delivery' : '✅ Online Paid'}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '12px', color: '#64748B' }}>Subtotal</span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#0F172A' }}>₹{order.subtotal?.toLocaleString('en-IN')}</span>
+        </div>
+        {order.shippingFee > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#64748B' }}>Shipping</span>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#0F172A' }}>₹{order.shippingFee}</span>
+          </div>
+        )}
+        {order.discount > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#64748B' }}>Discount</span>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#15803D' }}>-₹{order.discount}</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #E2E8F0', paddingTop: '6px', marginTop: '4px' }}>
+          <span style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>Total</span>
+          <span style={{ fontSize: '15px', fontWeight: '800', color: '#7C3AED' }}>₹{order.totalAmount?.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+
+      {/* All Items */}
+      <div style={{ background: 'white', borderRadius: '10px', padding: '12px', border: '1px solid #EDE9FE' }}>
+        <p style={{ fontSize: '10px', color: '#7C3AED', margin: '0 0 8px', fontWeight: '700', textTransform: 'uppercase' }}>🛍️ Items ({order.items?.length})</p>
+        {order.items?.map((item, i) => (
+          <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingTop: i > 0 ? '8px' : 0, borderTop: i > 0 ? '1px dashed #F1F5F9' : 'none', marginTop: i > 0 ? '8px' : 0 }}>
+            <img src={item.image || item.images?.[0] || ''} alt={item.title} style={{ width: '44px', height: '54px', objectFit: 'cover', borderRadius: '6px', background: '#F1F5F9', flexShrink: 0 }} onError={e => { e.target.src = '' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+              <p style={{ fontSize: '11px', color: '#94A3B8', margin: '0 0 2px' }}>{item.size && `Size: ${item.size}`}{item.color && ` • ${item.color}`}</p>
+              <p style={{ fontSize: '12px', fontWeight: '700', color: '#7C3AED', margin: 0 }}>₹{item.sellingPrice} × {item.quantity}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Star rating row ───────────────────────────────────────────────────────── */
 function StarRow({ orderId, productId, navigate }) {
   const [hovered, setHovered] = useState(0)
   return (
@@ -125,18 +159,14 @@ function StarRow({ orderId, productId, navigate }) {
               onMouseEnter={() => setHovered(i + 1)}
               onMouseLeave={() => setHovered(0)}
               onClick={() => navigate(`/review/${orderId}/${productId}`)}>
-              <svg width="28" height="28" viewBox="0 0 24 24"
-                fill={hovered >= i + 1 ? '#f59e0b' : 'none'}
-                stroke={hovered >= i + 1 ? '#f59e0b' : '#CBD5E1'}
-                strokeWidth="1.5">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill={hovered >= i + 1 ? '#f59e0b' : 'none'} stroke={hovered >= i + 1 ? '#f59e0b' : '#CBD5E1'} strokeWidth="1.5">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
               <p style={{ fontSize: '9px', color: '#94A3B8', margin: 0, fontWeight: '500' }}>{label}</p>
             </div>
           ))}
         </div>
-        <button
-          onClick={() => navigate(`/review/${orderId}/${productId}`)}
+        <button onClick={() => navigate(`/review/${orderId}/${productId}`)}
           style={{ padding: '8px 16px', background: 'white', color: '#7C3AED', border: '1.5px solid #7C3AED', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', fontFamily: f }}>
           Rate &amp; Review
         </button>
@@ -148,12 +178,13 @@ function StarRow({ orderId, productId, navigate }) {
 /* ── Main Page ─────────────────────────────────────────────────────────────── */
 export default function MyOrdersPage() {
   const navigate = useNavigate()
-  const [orders,  setOrders]  = useState([])
-  const [loading, setLoading] = useState(true)
-  const [status,  setStatus]  = useState('')
-  const [page,    setPage]    = useState(1)
-  const [total,   setTotal]   = useState(0)
-  const [search,  setSearch]  = useState('')
+  const [orders,      setOrders]      = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [status,      setStatus]      = useState('')
+  const [page,        setPage]        = useState(1)
+  const [total,       setTotal]       = useState(0)
+  const [search,      setSearch]      = useState('')
+  const [expandedId,  setExpandedId]  = useState(null)
   const LIMIT = 10
 
   const fetchOrders = useCallback(async () => {
@@ -171,47 +202,22 @@ export default function MyOrdersPage() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  // ── Socket.io: real-time order status updates ──────────────────────────────
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
-      withCredentials: true,
-    })
-
-    // Join personal room so server can emit to this user
+    const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', { withCredentials: true })
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     if (user?._id) socket.emit('join', user._id)
-
-    // Any status update — refresh orders list + toast
-    socket.on('order_status_update', ({ status: newStatus, message }) => {
-      toast.success(`📦 ${message}`, { duration: 4000 })
-      fetchOrders()
-    })
-
-    // Out for delivery — show toast with Track link
+    socket.on('order_status_update', ({ message }) => { toast.success(`📦 ${message}`, { duration: 4000 }); fetchOrders() })
     socket.on('out_for_delivery', ({ trackingUrl, message }) => {
-      toast(
-        (t) => (
-          <div style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            <p style={{ margin: '0 0 8px', fontWeight: '700' }}>{message}</p>
-            <a
-              href={trackingUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: '#ec4899', fontWeight: '600', fontSize: '13px' }}
-              onClick={() => toast.dismiss(t.id)}
-            >
-              Track your order →
-            </a>
-          </div>
-        ),
-        { duration: 8000, icon: '🚚' }
-      )
+      toast((t) => (
+        <div style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <p style={{ margin: '0 0 8px', fontWeight: '700' }}>{message}</p>
+          <a href={trackingUrl} target="_blank" rel="noreferrer" style={{ color: '#ec4899', fontWeight: '600', fontSize: '13px' }} onClick={() => toast.dismiss(t.id)}>Track your order →</a>
+        </div>
+      ), { duration: 8000, icon: '🚚' })
       fetchOrders()
     })
-
     return () => socket.disconnect()
   }, [fetchOrders])
-  // ──────────────────────────────────────────────────────────────────────────
 
   const handleCancel = async (id) => {
     if (!window.confirm('Cancel this order?')) return
@@ -229,10 +235,7 @@ export default function MyOrdersPage() {
   const filteredOrders = orders.filter(o => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
-    return (
-      o._id.toLowerCase().includes(q) ||
-      o.items?.some(i => i.title?.toLowerCase().includes(q))
-    )
+    return o._id.toLowerCase().includes(q) || o.items?.some(i => i.title?.toLowerCase().includes(q))
   })
 
   return (
@@ -244,9 +247,13 @@ export default function MyOrdersPage() {
         .tab-btn.active { background:#7C3AED; color:white; border-color:transparent; }
         .order-row { background:white; border-bottom:8px solid #F8FAFC; }
         @keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
         .shimmer { background:linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%); background-size:400px 100%; animation:shimmer 1.2s infinite; }
         .search-box { width:100%; padding:11px 16px 11px 42px; border:1.5px solid #E2E8F0; border-radius:24px; font-size:14px; font-family:${f}; outline:none; background:#F8FAFC; box-sizing:border-box; }
         .search-box:focus { border-color:#7C3AED; background:white; }
+        .details-btn { background:#F5F3FF; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; color:#7C3AED; font-size:12px; font-weight:700; flex-shrink:0; align-self:center; white-space:nowrap; transition:all 0.15s; }
+        .details-btn:hover { background:#EDE9FE; }
+        .details-btn.open { background:#7C3AED; color:white; }
       `}</style>
 
       {/* Header */}
@@ -310,23 +317,22 @@ export default function MyOrdersPage() {
               const isReturned  = ['return_requested', 'returned'].includes(order.status)
               const canCancel   = ['placed', 'confirmed', 'packed'].includes(order.status)
               const dateStr     = new Date(order.createdAt).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+              const isExpanded  = expandedId === order._id
 
               return (
                 <div key={order._id} className="order-row">
                   {order.items?.map((item, idx) => (
                     <div key={idx}
-                      onClick={() => navigate(`/order/${order._id}`)}
+                      onClick={() => navigate(`/product/${item.product}`)}
                       style={{ display: 'flex', gap: '12px', padding: '14px 16px', cursor: 'pointer', alignItems: 'flex-start', borderTop: idx > 0 ? '1px dashed #F1F5F9' : 'none' }}>
 
-                      <img
-                        src={item.image} alt={item.title}
+                      <img src={item.image || item.images?.[0] || ''} alt={item.title}
                         style={{ width: '88px', height: '108px', objectFit: 'cover', borderRadius: '6px', background: '#F1F5F9', flexShrink: 0 }}
                         onError={e => { e.target.style.background = '#F1F5F9'; e.target.src = '' }}
                       />
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: '13px', fontWeight: '800', margin: '0 0 2px',
-                          color: isCancelled ? '#BE123C' : isReturned ? '#A21CAF' : isDelivered ? '#15803D' : '#7C3AED' }}>
+                        <p style={{ fontSize: '13px', fontWeight: '800', margin: '0 0 2px', color: isCancelled ? '#BE123C' : isReturned ? '#A21CAF' : isDelivered ? '#15803D' : '#7C3AED' }}>
                           {isCancelled ? '✕ ' : isDelivered ? '✓ ' : ''}{sc.label}
                         </p>
                         <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 6px', fontWeight: '500' }}>{dateStr}</p>
@@ -339,13 +345,8 @@ export default function MyOrdersPage() {
                         <p style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', margin: 0 }}>
                           ₹{(item.sellingPrice * item.quantity).toLocaleString('en-IN')}
                         </p>
-
-                        {/* Track button shown inline when out for delivery */}
                         {order.status === 'out_for_delivery' && order.trackingUrl && (
-                          <a
-                            href={order.trackingUrl}
-                            target="_blank"
-                            rel="noreferrer"
+                          <a href={order.trackingUrl} target="_blank" rel="noreferrer"
                             onClick={e => e.stopPropagation()}
                             style={{ display: 'inline-block', marginTop: '8px', padding: '5px 12px', background: '#fdf2f8', color: '#ec4899', border: '1px solid #ec4899', borderRadius: '6px', fontSize: '11px', fontWeight: '700', textDecoration: 'none' }}>
                             📍 Track Order
@@ -353,18 +354,24 @@ export default function MyOrdersPage() {
                         )}
                       </div>
 
-                      <span style={{ color: '#CBD5E1', fontSize: '20px', alignSelf: 'center' }}>›</span>
+                      {/* Details toggle button — only on first item */}
+                      {idx === 0 && (
+                        <button
+                          className={`details-btn${isExpanded ? ' open' : ''}`}
+                          onClick={e => { e.stopPropagation(); setExpandedId(isExpanded ? null : order._id) }}>
+                          {isExpanded ? '▲ Hide' : '▼ Details'}
+                        </button>
+                      )}
                     </div>
                   ))}
+
+                  {/* Expanded Order Info */}
+                  {isExpanded && <OrderInfoPanel order={order} />}
 
                   <TrackingPipeline status={order.status} />
 
                   {isDelivered && (
-                    <StarRow
-                      orderId={order._id}
-                      productId={order.items?.[0]?.product}
-                      navigate={navigate}
-                    />
+                    <StarRow orderId={order._id} productId={order.items?.[0]?.product} navigate={navigate} />
                   )}
 
                   {canCancel && (

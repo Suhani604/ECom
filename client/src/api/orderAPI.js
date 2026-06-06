@@ -13,3 +13,5 @@ export const createRazorpayOrderAPI   = (orderId) => api.post(`/orders/${orderId
 export const verifyRazorpayPaymentAPI = (data)    => api.post('/orders/verify-payment', data)
 // ADD this line
 export const updateOrderStatusAPI = (id, data) => api.put(`/orders/${id}/status`, data)
+export const calculateShippingAPI = (data) =>
+  api.post('/orders/calculate-shipping', data)

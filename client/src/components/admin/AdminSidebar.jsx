@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   FiLogOut, FiX, FiGrid, FiUsers, FiPackage,
-  FiShoppingBag, FiTrendingUp, FiStar, FiImage, FiLayers  // ← FiLayers add karo
+  FiShoppingBag, FiTrendingUp, FiStar, FiImage, FiLayers, FiTruck
 } from 'react-icons/fi'
 import useAuthStore from '../../context/useAuthStore.js'
 
@@ -14,7 +14,9 @@ const LINKS = [
   { path: '/admin/reviews',   label: 'Reviews',   Icon: FiStar },
   { path: '/admin/banners',   label: 'Banners',   Icon: FiImage },
   // LINKS array mein Banners ke neeche add karo
-{ path: '/admin/categories', label: 'Categories', Icon: FiLayers },
+  { path: '/admin/categories', label: 'Categories', Icon: FiLayers },
+  { path: '/admin/categories',         label: 'Categories', Icon: FiLayers },
+  { path: '/admin/delivery-partners',  label: 'Delivery',   Icon: FiTruck  },
 ]
 
 export default function AdminSidebar({ open, onClose }) {

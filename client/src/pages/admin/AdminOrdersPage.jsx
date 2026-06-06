@@ -23,21 +23,6 @@ const STATUS_STYLE = {
   returned:         { bg:'#F8FAFC', color:'#64748B',  label:'Returned' },
 }
 
-const NEXT_STATUS = {
-  placed:           'confirmed',
-  confirmed:        'packed',
-  packed:           'shipped',
-  shipped:          'out_for_delivery',
-  out_for_delivery: 'delivered',
-}
-const NEXT_LABEL = {
-  placed:           '✓ Confirm Order',
-  confirmed:        '📦 Mark Packed',
-  packed:           '🚚 Mark Shipped',
-  shipped:          '🛵 Out for Delivery',
-  out_for_delivery: '✅ Mark Delivered',
-}
-
 const TABS = [
   { key:'',                label:'All' },
   { key:'placed',          label:'Placed' },
@@ -60,6 +45,8 @@ export default function AdminOrdersPage() {
   const [total,     setTotal]     = useState(0)
   const [updating,  setUpdating]  = useState(null)
   const [search,    setSearch]    = useState('')
+  const [assigning, setAssigning] = useState(null)
+  
   const LIMIT = 15
 
   const fetchOrders = useCallback(async () => {
@@ -87,6 +74,16 @@ export default function AdminOrdersPage() {
       toast.error(e.response?.data?.message || 'Status update failed')
     } finally { setUpdating(null) }
   }
+  const assignDelivery = async (orderId) => {
+  setAssigning(orderId)
+  try {
+    const { data } = await api.put(`/admin/orders/${orderId}/assign-delivery`)
+    toast.success(`Assigned to ${data.data?.deliveryPartner?.name}! OTP: ${data.data?.otp}`)
+    fetchOrders()
+  } catch (e) {
+    toast.error(e.response?.data?.message || 'No delivery partner available')
+  } finally { setAssigning(null) }
+}
 
   const totalPages = Math.ceil(total / LIMIT)
 
@@ -143,15 +140,6 @@ export default function AdminOrdersPage() {
             </div>
           </div>
         </header>
-
-        {/* ── Dev hint banner ── */}
-        <div style={{ background:'linear-gradient(135deg,#FEF3C7,#FDE68A)', borderBottom:'1px solid #FCD34D', padding:'10px 24px', display:'flex', alignItems:'center', gap:'10px' }}>
-          <span style={{ fontSize:'16px' }}>⚡</span>
-          <p style={{ fontSize:'13px', color:'#92400E', margin:0, fontWeight:'600' }}>
-            Testing mode — use the advance buttons below to move orders through statuses so buyers can review delivered orders.
-          </p>
-        </div>
-
         {/* ── Page body ── */}
         <main className="flex-1 p-5 sm:p-7 space-y-5 max-w-5xl w-full mx-auto">
 
@@ -214,7 +202,6 @@ export default function AdminOrdersPage() {
             <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
               {orders.map(order => {
                 const sc         = STATUS_STYLE[order.status] || STATUS_STYLE.placed
-                const nextStatus = NEXT_STATUS[order.status]
                 const isUpdating = updating === order._id
 
                 return (
@@ -285,18 +272,25 @@ export default function AdminOrdersPage() {
                           )
                         })}
                       </div>
+
+                      {order.status === 'packed' && !order.deliveryBoy && (
+                          <button className="next-btn"
+                            disabled={assigning === order._id}
+                            onClick={() => assignDelivery(order._id)}
+                            style={{ background: assigning === order._id ? '#E2E8F0' : 'linear-gradient(135deg,#f97316,#ec4899)', color: assigning === order._id ? '#94A3B8' : 'white' }}>
+                            {assigning === order._id ? '...' : '🛵 Assign Delivery'}
+                          </button>
+                        )}
+                        {order.deliveryBoy && (
+                          <span style={{ fontSize:'11px', background:'#F0FDF4', color:'#15803D', padding:'4px 10px', borderRadius:'20px', fontWeight:'700', border:'1px solid #BBF7D0' }}>
+                            🛵 {order.deliveryBoy?.name || 'Assigned'}
+                          </span>
+                        )}
                       <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
                         <button onClick={() => navigate(`/admin/orders/${order._id}`)}
                           style={{ padding:'7px 13px', background:'#F1F5F9', color:'#374151', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'12px', fontWeight:'700', fontFamily:f }}>
                           View
                         </button>
-                        {nextStatus && (
-                          <button className="next-btn" disabled={isUpdating}
-                            onClick={() => updateStatus(order._id, nextStatus)}
-                            style={{ background: isUpdating ? '#E2E8F0' : 'linear-gradient(135deg,#7C3AED,#E91E8C)', color: isUpdating ? '#94A3B8' : 'white' }}>
-                            {isUpdating ? '...' : NEXT_LABEL[order.status]}
-                          </button>
-                        )}
                         {!['delivered','cancelled','returned'].includes(order.status) && (
                           <button className="next-btn" disabled={isUpdating}
                             onClick={() => updateStatus(order._id, 'cancelled')}

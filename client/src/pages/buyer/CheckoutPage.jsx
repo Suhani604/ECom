@@ -126,16 +126,11 @@ function PlacesInput({ value, onChange, onSelect, placeholder, style, error }) {
 
 // ─── Checkout Progress Tracker ────────────────────────────────────────────────
 function CheckoutStepper({ selectedAddr, payMethod }) {
-  // Step 1 = Address done when an address is selected
-  // Step 2 = Payment done when a method is chosen (always true since default exists)
-  // Step 3 = Order Summary — always visible, completed on place order
   const steps = [
     { label: 'Address',       emoji: '📍', done: !!selectedAddr },
     { label: 'Payment',       emoji: '💳', done: !!payMethod    },
     { label: 'Order Summary', emoji: '🛒', done: false          },
   ]
-
-  // Current active step index
   const activeIdx = steps.reduce((acc, s, i) => (s.done ? i + 1 : acc), 0)
 
   return (
@@ -149,25 +144,17 @@ function CheckoutStepper({ selectedAddr, payMethod }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {steps.map((step, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
-
-            {/* Step circle */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
               <div style={{
                 width: '38px', height: '38px', borderRadius: '50%',
                 background: i < activeIdx
-                  ? 'linear-gradient(135deg,#ec4899,#f97316)'  // completed
-                  : i === activeIdx
-                    ? '#FFF0F9'                                 // active
-                    : '#F1F5F9',                                // upcoming
+                  ? 'linear-gradient(135deg,#ec4899,#f97316)'
+                  : i === activeIdx ? '#FFF0F9' : '#F1F5F9',
                 border: i === activeIdx
                   ? '2px solid #ec4899'
-                  : i < activeIdx
-                    ? 'none'
-                    : '2px solid #E2E8F0',
+                  : i < activeIdx ? 'none' : '2px solid #E2E8F0',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: i < activeIdx ? '16px' : '16px',
-                transition: 'all 0.3s ease',
-                flexShrink: 0,
+                fontSize: '16px', transition: 'all 0.3s ease', flexShrink: 0,
               }}>
                 {i < activeIdx
                   ? <span style={{ color: 'white', fontSize: '16px', fontWeight: '800' }}>✓</span>
@@ -177,34 +164,20 @@ function CheckoutStepper({ selectedAddr, payMethod }) {
               <span style={{
                 fontSize: '11px',
                 fontWeight: i <= activeIdx ? '700' : '500',
-                color: i < activeIdx
-                  ? '#ec4899'
-                  : i === activeIdx
-                    ? '#0F172A'
-                    : '#94A3B8',
-                whiteSpace: 'nowrap',
-                fontFamily: f,
+                color: i < activeIdx ? '#ec4899' : i === activeIdx ? '#0F172A' : '#94A3B8',
+                whiteSpace: 'nowrap', fontFamily: f,
               }}>
                 {step.label}
               </span>
             </div>
-
-            {/* Connector line between steps */}
             {i < steps.length - 1 && (
               <div style={{
-                flex: 1,
-                height: '3px',
-                marginBottom: '22px',  // align with circle center
-                marginLeft: '6px',
-                marginRight: '6px',
-                borderRadius: '2px',
-                background: i < activeIdx
-                  ? 'linear-gradient(90deg,#ec4899,#f97316)'
-                  : '#E2E8F0',
+                flex: 1, height: '3px', marginBottom: '22px',
+                marginLeft: '6px', marginRight: '6px', borderRadius: '2px',
+                background: i < activeIdx ? 'linear-gradient(90deg,#ec4899,#f97316)' : '#E2E8F0',
                 transition: 'background 0.4s ease',
               }} />
             )}
-
           </div>
         ))}
       </div>
@@ -230,22 +203,28 @@ export default function CheckoutPage() {
   // ── Calculate all charges dynamically ─────────────────────────────────────
   const subtotal = totalAmount()
 
-  // Total weight from cart items (use shippingWeight if available, else 500g fallback)
   const totalWeightG = items.reduce((acc, item) => {
-    const w = item.shippingWeight || 500   // grams — make sure cart stores this
+    const w = item.shippingWeight || 500
     return acc + w * item.quantity
   }, 0)
 
+  const mrpTotal       = items.reduce((s, i) => s + i.mrp * i.quantity, 0)
+  const discount       = mrpTotal - subtotal
   const isFreeShipping = subtotal >= FREE_SHIPPING_ABOVE
   const shippingFee    = calcShippingFee(totalWeightG, subtotal)
-  const codFee         = payMethod === 'cod' && !isFreeShipping ? COD_FEE : payMethod === 'cod' ? COD_FEE : 0
+  const codFee         = payMethod === 'cod' ? COD_FEE : 0
   const grandTotal     = subtotal + shippingFee + codFee
 
-  useEffect(() => { if (items.length === 0) navigate('/cart') }, [items])
+  const orderPlacedRef = useRef(false)
 
   useEffect(() => {
-    getAddressesAPI()
-      .then(({ data }) => {
+    if (items.length === 0 && !orderPlacedRef.current) navigate('/cart')
+  }, [items])
+
+  useEffect(() => {
+  if (!user) return
+  getAddressesAPI()
+    .then(({ data }) => {
         setAddresses(data.addresses || [])
         const def = data.addresses?.find(a => a.isDefault) || data.addresses?.[0]
         if (def) setSelectedAddr(def)
@@ -292,10 +271,14 @@ export default function CheckoutPage() {
     setTimeout(() => resolve(false), 10000)
   })
 
-  const placeOrder = async () => {
+    const placeOrder = async () => {
+    if (!user) {
+      navigate('/login?redirect=/checkout')
+      return
+    }
     if (!selectedAddr) return toast.error('Select a delivery address')
-    setLoading(true)
-    try {
+    setLoading(true)  
+      try {
       if (payMethod === 'razorpay') {
         const loaded = await loadRazorpay()
         if (!loaded) { toast.error('Razorpay failed to load. Check internet.'); setLoading(false); return }
@@ -331,9 +314,10 @@ export default function CheckoutPage() {
       const order = od.order
 
       if (payMethod === 'cod') {
+        orderPlacedRef.current = true
         clearCart()
         toast.success('Order placed!')
-        navigate(`/order-success/${order._id}`)
+        navigate(`/order-success/${order._id}`, { replace: true })
         return
       }
 
@@ -355,9 +339,10 @@ export default function CheckoutPage() {
               razorpayPaymentId: resp.razorpay_payment_id,
               razorpaySignature: resp.razorpay_signature,
             })
+            orderPlacedRef.current = true
             clearCart()
             toast.success('Payment successful! 🎉')
-            navigate(`/order-success/${order._id}`)
+            navigate(`/order-success/${order._id}`, { replace: true })
           } catch {
             toast.error('Payment verification failed')
           }
@@ -381,7 +366,6 @@ export default function CheckoutPage() {
   }
   const card  = { background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }
   const label = { display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px' }
-  const row   = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px' }
 
   const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -395,7 +379,42 @@ export default function CheckoutPage() {
       </div>
 
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
+      
+        {/* ── Login Banner for guests ─────────────────────────────── */}
+        {!user && (
+          <div style={{
+            background: 'linear-gradient(135deg, #FFF0F9, #F5F0FF)',
+            border: '1.5px solid #ec4899',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '28px' }}>🔐</span>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', margin: '0 0 2px' }}>
+                  Login or Signup to place your order
+                </p>
+                <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+                  You'll need to login when you click "Place Order"
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button onClick={() => navigate('/login?redirect=/checkout')}
+                style={{ padding: '8px 16px', background: 'white', color: '#ec4899', border: '2px solid #ec4899', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: f }}>
+                Login
+              </button>
+              <button onClick={() => navigate('/signup/buyer?redirect=/checkout')}
+                style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#ec4899,#f97316)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: f }}>
+                Sign Up
+              </button>
+            </div>
+          </div>
+        )}
         {/* ── Progress Stepper ─────────────────────────────────────────────── */}
         <CheckoutStepper selectedAddr={selectedAddr} payMethod={payMethod} />
 
@@ -556,51 +575,84 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          {/* Charge breakdown */}
-          <div style={{ borderTop:'1px solid #F1F5F9', paddingTop:'14px', display:'flex', flexDirection:'column', gap:'9px' }}>
-
-            {/* Subtotal */}
-            <div style={row}>
-              <span style={{ color:'#64748B' }}>Subtotal</span>
-              <span style={{ color:'#64748B' }}>₹{subtotal.toLocaleString('en-IN')}</span>
-            </div>
-
-            {/* Shipping */}
-            <div style={row}>
-              <span style={{ color:'#64748B' }}>
-                Shipping
-                {isFreeShipping && <span style={{ marginLeft:'8px', fontSize:'11px', background:'#DCFCE7', color:'#16A34A', padding:'2px 8px', borderRadius:'20px', fontWeight:'700' }}>FREE above ₹{FREE_SHIPPING_ABOVE}</span>}
-              </span>
-              <span style={{ color: shippingFee === 0 ? '#16A34A' : '#374151', fontWeight: shippingFee === 0 ? '700' : '400' }}>
-                {shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}
+          {/* ── Myntra-style Price Details ──────────────────────────── */}
+          <div style={{
+            marginTop: '4px',
+            background: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: '12px',
+            overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', background: '#F1F5F9' }}>
+              <span style={{ fontSize: '12px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Price Details ({items.reduce((s, i) => s + i.quantity, 0)} Item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''})
               </span>
             </div>
 
-            {/* COD fee — only show when COD selected */}
-            {payMethod === 'cod' && (
-              <div style={row}>
-                <span style={{ color:'#64748B' }}>
-                  COD handling fee
-                  <span style={{ marginLeft:'8px', fontSize:'11px', background:'#FEF9C3', color:'#92400E', padding:'2px 8px', borderRadius:'20px', fontWeight:'600' }}>Cash on Delivery</span>
-                </span>
-                <span style={{ color:'#374151' }}>₹{COD_FEE}</span>
-              </div>
-            )}
+            <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-            {/* Savings banner */}
-            {isFreeShipping && (
-              <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:'10px', padding:'10px 14px', display:'flex', alignItems:'center', gap:'8px', marginTop:'4px' }}>
-                <span style={{ fontSize:'16px' }}>🎉</span>
-                <span style={{ fontSize:'12px', color:'#16A34A', fontWeight:'600' }}>
-                  You saved ₹{calcShippingFee(totalWeightG, 0)} on shipping! (order above ₹{FREE_SHIPPING_ABOVE})
+              {/* Total MRP */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                <span style={{ color: '#64748B' }}>Total MRP</span>
+                <span style={{ color: '#374151' }}>₹{mrpTotal.toLocaleString('en-IN')}</span>
+              </div>
+
+              {/* Discount on MRP */}
+              {discount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: '#64748B' }}>Discount on MRP</span>
+                  <span style={{ color: '#16A34A', fontWeight: '700' }}>− ₹{discount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {/* Shipping Fee */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                <span style={{ color: '#64748B' }}>Shipping Fee</span>
+                {shippingFee === 0
+                  ? <span style={{ color: '#16A34A', fontWeight: '700' }}>FREE</span>
+                  : <span style={{ color: '#374151' }}>₹{shippingFee}</span>
+                }
+              </div>
+
+              {/* COD Handling Fee */}
+              {payMethod === 'cod' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: '#64748B' }}>COD Handling Fee</span>
+                  <span style={{ color: '#374151' }}>₹{COD_FEE}</span>
+                </div>
+              )}
+
+              {/* Free shipping banner */}
+              {isFreeShipping && (
+                <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '14px' }}>🎉</span>
+                  <span style={{ fontSize: '12px', color: '#16A34A', fontWeight: '600' }}>
+                    You saved ₹{calcShippingFee(totalWeightG, 0)} on shipping!
+                  </span>
+                </div>
+              )}
+
+              {/* Divider */}
+              <div style={{ height: '1px', background: '#E2E8F0' }} />
+
+              {/* Total Amount */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>Total Amount</span>
+                <span style={{ fontSize: '20px', fontWeight: '900', color: '#ec4899' }}>
+                  ₹{grandTotal.toLocaleString('en-IN')}
                 </span>
               </div>
-            )}
 
-            {/* Total */}
-            <div style={{ ...row, fontWeight:'800', color:'#0F172A', fontSize:'16px', paddingTop:'10px', borderTop:'1px solid #F1F5F9', marginTop:'4px' }}>
-              <span>Total</span>
-              <span style={{ color:'#ec4899' }}>₹{grandTotal.toLocaleString('en-IN')}</span>
+              {/* Savings pill */}
+              {discount > 0 && (
+                <div style={{ background: '#FFF0F9', border: '1px solid #fbcfe8', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '13px', color: '#ec4899', fontWeight: '700' }}>
+                    🛍️ You will save ₹{(discount + (isFreeShipping ? calcShippingFee(totalWeightG, 0) : 0)).toLocaleString('en-IN')} on this order
+                  </span>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

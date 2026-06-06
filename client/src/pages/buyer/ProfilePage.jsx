@@ -59,6 +59,20 @@ export default function ProfilePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: f }}>
+      <style>{`
+        @media(max-width: 768px) {
+            .profile-grid { 
+              grid-template-columns: 1fr !important; 
+              padding: 16px !important;
+              gap: 16px !important;
+            }
+            .profile-grid > div:first-child {
+              width: 100% !important;
+            }
+          }
+      `}</style>
+
+      {/* ── Navbar ── */}
 
       {/* ── Navbar ─────────────────────────────────────────────────────── */}
       <nav style={{ background: 'white', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', position: 'sticky', top: 0, zIndex: 100 }}>
@@ -97,7 +111,7 @@ export default function ProfilePage() {
       </div>
 
       {/* ── Main Layout ─────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: '1100px', margin: '32px auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '280px 1fr', gap: '24px', alignItems: 'flex-start' }}>
+      <div className="profile-grid" style={{ maxWidth: '1100px', margin: '32px auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '280px 1fr', gap: '24px', alignItems: 'flex-start' }}>
 
         {/* ── LEFT PANEL ──────────────────────────────────────────────── */}
         <div>

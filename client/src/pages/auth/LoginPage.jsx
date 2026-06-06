@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import useAuthStore from '../../context/useAuthStore.js'
 import api from '../../api/axiosInstance.js'
 import toast from 'react-hot-toast'
@@ -7,14 +7,18 @@ import toast from 'react-hot-toast'
 const f = '"DM Sans", Poppins, sans-serif'
 
 export default function LoginPage() {
-  const navigate   = useNavigate()
-  const storeLogin = useAuthStore((s) => s.login)
+ const navigate   = useNavigate()
+const storeLogin = useAuthStore((s) => s.login)
+const [searchParams] = useSearchParams()
+const redirectTo = searchParams.get('redirect')
   const [form,    setForm]    = useState({ emailOrPhone: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [showPw,  setShowPw]  = useState(false)
+  const [role, setRole] = useState('buyer')
   const [focused, setFocused] = useState('')
 
   const handleLogin = async (e) => {
+    console.log('redirectTo:', redirectTo)
     e.preventDefault()
     if (!form.emailOrPhone || !form.password) return toast.error('Fill all fields')
     setLoading(true)
@@ -23,10 +27,20 @@ export default function LoginPage() {
         emailOrPhone: form.emailOrPhone,
         password:     form.password,
       })
+  
+      if (data.user.role !== role) {
+        toast.error(`This account is not registered as a ${role.charAt(0).toUpperCase() + role.slice(1)}. Please select the correct tab.`)
+        setLoading(false)
+        return
+      }
       storeLogin(data.user, data.token)
       toast.success(`Welcome back, ${data.user.name}! 👋`)
-      const routes = { buyer: '/home', seller: '/seller/dashboard', admin: '/admin/dashboard' }
-      navigate(routes[data.user.role] || '/home', { replace: true })
+     if (redirectTo && data.user.role === 'buyer') {
+  navigate(redirectTo, { replace: true })
+} else {
+  const routes = { buyer: '/home', seller: '/seller/dashboard', admin: '/admin/dashboard' }
+  navigate(routes[data.user.role] || '/home', { replace: true })
+}
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed')
     } finally { setLoading(false) }
@@ -71,7 +85,11 @@ export default function LoginPage() {
         <div style={{ position: 'absolute', bottom: '-10px', left: '5%', width: '220px', height: '120px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.04)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '70px 0' }}>
           {/* Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+           
+          <div
+              onClick={() => navigate('/home')} 
+             style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(233,30,140,0.4)', flexShrink: 0 }}>
               <span style={{ color: 'white', fontSize: '20px', fontWeight: '800' }}>S</span>
             </div>
@@ -122,7 +140,22 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '14px' }}>
+            {/* Role Tabs */}
+                <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '0px', padding: '4px', marginBottom: '20px' }}>
+                  {['admin', 'seller', 'buyer'].map(r => (
+                    <button key={r} type="button" onClick={() => setRole(r)}
+                      style={{
+                        flex: 1, padding: '9px', border: 'none', borderRadius: '0px', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: '700', fontFamily: f, transition: 'all 0.2s',
+                        background: role === r ? 'white' : 'transparent',
+                        color: role === r ? (r === 'admin' ? '#7C3AED' : r === 'seller' ? '#E91E8C' : '#0891B2') : '#94A3B8',
+                        boxShadow: role === r ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                      }}>
+                      {r === 'admin' ? '⚙️ Admin' : r === 'seller' ? '🏪 Seller' : '🛍️ Buyer'}
+                    </button>
+                  ))}
+                </div>
+            <div style={{ marginBottom: '14px' }}> 
               <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px', letterSpacing: '0.3px' }}>Email or Phone Number</label>
               <input
                 type="text"
@@ -182,7 +215,7 @@ export default function LoginPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Link to="/signup/buyer" className="nav-link" style={{
+            <Link to={`/signup/buyer${redirectTo ? `?redirect=${redirectTo}` : ''}`} className="nav-link" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: '10px',
               fontSize: '13px', fontWeight: '600', color: '#E91E8C', textDecoration: 'none',
@@ -199,6 +232,15 @@ export default function LoginPage() {
               🏪 Want to sell? Become a seller
             </Link>
           </div>
+              <Link to="/delivery/login" className="nav-link" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: '10px',
+                fontSize: '13px', fontWeight: '600', color: '#f97316', textDecoration: 'none',
+                transition: 'all 0.2s', background: 'white',
+              }}>
+                🛵 Delivery Partner? Login here
+              </Link>
+
 
           <div style={{ textAlign: 'center', marginTop: '18px' }}>
             <button

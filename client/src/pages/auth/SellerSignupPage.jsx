@@ -84,7 +84,9 @@ export default function SellerSignupPage() {
         {/* Main nav row */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '60px 0' }}>
           {/* Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div 
+            onClick={() => navigate('/home')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#7C3AED,#E91E8C)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(124,58,237,0.4)', flexShrink: 0 }}>
               <span style={{ fontSize: '22px' }}>🎗️</span>
             </div>

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import api from '../../api/axiosInstance.js'
 import useCartStore from '../../context/useCartStore.js'
 import useAuthStore from '../../context/useAuthStore.js'
+import { getCurrentLocation, isGeolocationAvailable } from '../../utils/geolocation.js'
 
 const f = 'Poppins, sans-serif'
 
@@ -13,6 +14,8 @@ function DeliveryOptions() {
   const [checking, setChecking] = useState(false)
   const [result,   setResult]   = useState(null)
   const [error,    setError]    = useState('')
+  const [geoLoading,  setGeoLoading]  = useState(false)
+const [geoDetected, setGeoDetected] = useState(null)
 
   const PINCODE_DB = {
     110: { state: 'Delhi',             district: 'New Delhi' },
@@ -168,7 +171,73 @@ function DeliveryOptions() {
       setChecking(false)
     }
   }
+      const detectLocation = async () => {
+        if (!isGeolocationAvailable()) {
+          setError('Geolocation not supported by your browser')
+          return
+        }
+        setGeoLoading(true)
+        setError('')
+        setResult(null)
+        try {
+          const { latitude, longitude, accuracy } = await getCurrentLocation()
 
+          const res  = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' } }
+          )
+          const data = await res.json()
+          const addr = data.address || {}
+
+          const road      = addr.road || addr.pedestrian || addr.footway || ''
+          const suburb    = addr.suburb || addr.neighbourhood || addr.quarter || ''
+          const village   = addr.village || addr.town || ''
+          const city      = addr.city || addr.town || addr.village || addr.county || ''
+          const district  = addr.state_district || addr.county || city
+          const state     = addr.state || ''
+          const pin       = addr.postcode?.replace(/\s/g, '').slice(0, 6)
+
+          const parts       = [road, suburb, village, city].filter(Boolean)
+          const uniqueParts = [...new Set(parts)]
+          const fullAddress = uniqueParts.join(', ') + (pin ? ` - ${pin}` : '') + (state ? `, ${state}` : '')
+
+          setGeoDetected({
+            lat: latitude,
+            lon: longitude,
+            accuracy: Math.round(accuracy),
+            address: fullAddress,
+            district,
+            state,
+          })
+
+          if (pin && /^\d{6}$/.test(pin)) {
+            setPincode(pin)
+            setChecking(true)
+            try {
+              const { data: apiData } = await api.get(
+                `/orders/check-pincode?pincode=${pin}`,
+                { headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }
+              )
+              const payload = apiData?.data
+              if (payload && typeof payload.available !== 'undefined') {
+                setResult(payload)
+              } else {
+                setResult(localLookup(pin) || { available: false, pincode: pin, message: 'Pincode not serviceable.' })
+              }
+            } catch {
+              setResult(localLookup(pin) || { available: false, pincode: pin, message: 'Could not check pincode.' })
+            } finally {
+              setChecking(false)
+            }
+          } else {
+            setError('Pincode detect झाला नाही. Manual enter करा.')
+          }
+        } catch (err) {
+          setError(err.message || 'Location fetch failed.')
+        } finally {
+          setGeoLoading(false)
+        }
+      }
   const handleKey = e => { if (e.key === 'Enter') check() }
 
   return (
@@ -178,6 +247,49 @@ function DeliveryOptions() {
         <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Delivery Options</span>
       </div>
       <div style={{ padding: '14px 16px', borderBottom: result || error ? '1px solid #F1F5F9' : 'none' }}>
+       {/* Detect Location Button */}
+<button
+  onClick={detectLocation}
+  disabled={geoLoading}
+  style={{
+    width: '100%', padding: '9px', marginBottom: '10px',
+    background: geoLoading ? '#F1F5F9' : '#EFF6FF',
+    border: '1.5px dashed #93C5FD', borderRadius: '8px',
+    cursor: geoLoading ? 'not-allowed' : 'pointer',
+    fontSize: '12px', fontWeight: '700', color: '#2563EB',
+    fontFamily: f, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', gap: '6px',
+  }}>
+  {geoLoading
+    ? <><span style={{ display:'inline-block', width:'12px', height:'12px', border:'2px solid #2563EB', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/> Detecting location...</>
+    : <>📍 Use my current location</>
+  }
+</button>
+
+{/* Location Captured UI */}
+{geoDetected && (
+  <div style={{
+    marginBottom: '10px', padding: '10px 14px',
+    background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px',
+  }}>
+    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'4px' }}>
+      <span style={{ fontSize:'16px' }}>✅</span>
+      <span style={{ fontSize:'13px', fontWeight:'700', color:'#15803D' }}>Location captured</span>
+    </div>
+    <p style={{ fontSize:'12px', color:'#374151', margin:'0 0 2px', fontWeight:'600' }}>
+      📍 {geoDetected.address}
+    </p>
+    <p style={{ fontSize:'11px', color:'#64748B', margin:0 }}>
+      {geoDetected.lat.toFixed(6)}°N, {geoDetected.lon.toFixed(6)}°E · Accuracy: ±{geoDetected.accuracy}m
+    </p>
+    <button
+      onClick={() => { setGeoDetected(null); setResult(null); setPincode('') }}
+      style={{ marginTop:'6px', fontSize:'11px', color:'#2563EB', background:'none', border:'none', cursor:'pointer', fontWeight:'600', padding:0, fontFamily:f }}>
+      🔄 Refresh Location
+    </button>
+  </div>
+)}
+
         <div style={{ display: 'flex', gap: '10px' }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', border: `1.5px solid ${error ? '#ef4444' : '#CBD5E1'}`, borderRadius: '8px', overflow: 'hidden', background: 'white' }}>
             <span style={{ padding: '0 10px', fontSize: '16px' }}>📍</span>
@@ -625,19 +737,25 @@ export default function ProductDetailPage() {
         .thumb-btn{transition:all 0.15s ease} .thumb-btn:hover{border-color:#ec4899!important;transform:scale(1.04)}
         .size-btn{transition:all 0.15s ease} .size-btn:hover{border-color:#ec4899!important;background:#FFF0F9!important}
         .action-btn{transition:all 0.2s} .action-btn:hover:not(:disabled){transform:translateY(-1px)}
+       @media(max-width:768px){
+      .product-grid{grid-template-columns:1fr!important;padding:12px 12px 90px!important;}
+      .product-sticky{position:static!important;flex-direction:column!important;}
+      .main-product-grid{grid-template-columns:1fr!important;gap:16px!important;}
+    }
       `}</style>
 
       {/* Header */}
-      <div style={{background:'white',padding:'0 20px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:30,boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}}>
+      <div style={{background:'white',padding:'0 20px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:30,boxShadow:'0 1px 3px rgba(0,0,0,0.08)',}}>
         <button onClick={()=>navigate(-1)} style={{background:'#F1F5F9',border:'none',width:'36px',height:'36px',borderRadius:'50%',cursor:'pointer',fontSize:'18px',display:'flex',alignItems:'center',justifyContent:'center'}}>←</button>
         <span style={{fontWeight:'700',fontSize:'15px',color:'#0F172A'}}>Product Details</span>
         <button onClick={()=>navigate('/cart')} style={{position:'relative',background:'none',border:'none',cursor:'pointer',padding:'6px'}}>
           <span style={{fontSize:'22px'}}>🛒</span>
           {items.length>0&&<span style={{position:'absolute',top:0,right:0,width:'16px',height:'16px',background:'#ec4899',color:'white',fontSize:'9px',fontWeight:'800',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>{items.reduce((s,i)=>s+i.quantity,0)}</span>}
+          
         </button>
       </div>
 
-      <div style={{maxWidth:'1200px',margin:'0 auto',padding:'24px 20px 90px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'32px',alignItems:'start'}}>
+      <div className="main-product-grid" style={{maxWidth:'1200px',margin:'0 auto',padding:'24px 20px 90px',display:'grid',gridTemplateColumns:'min(50%, 500px) 1fr',gap:'32px',alignItems:'start'}}>
 
         {/* LEFT: sticky image */}
         <div style={{position:'sticky',top:'72px',display:'flex',flexDirection:'row',gap:'12px'}}>
@@ -755,7 +873,7 @@ export default function ProductDetailPage() {
               style={{flex:1,height:'48px',background:'white',color:inStock?'#ec4899':'#94A3B8',border:`2px solid ${inStock?'#ec4899':'#E2E8F0'}`,borderRadius:'8px',cursor:inStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
               🛍️ {inCart?'Added to Bag':'Add to Bag'}
             </button>
-            <button onClick={()=>{handleAddToCart();if(inStock&&selSize)navigate('/checkout')}} disabled={!inStock} className="action-btn"
+              <button onClick={()=>{handleAddToCart();if(inStock&&selSize)navigate('/checkout')}} disabled={!inStock} className="action-btn"
               style={{flex:1,height:'48px',background:inStock?'linear-gradient(135deg,#ec4899,#f97316)':'#E2E8F0',color:inStock?'white':'#94A3B8',border:'none',borderRadius:'8px',cursor:inStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,boxShadow:inStock?'0 4px 14px rgba(236,72,153,0.35)':'none',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
               🤩 Buy Now
             </button>

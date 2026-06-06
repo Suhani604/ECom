@@ -22,13 +22,12 @@ const STATUS_CFG = {
   returned:          { label: 'Returned',          color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB' },
 }
 
-// Seller buttons stop at shipped — no Out for Delivery or Delivered
 const NEXT_STATUS = {
-  placed:    { label: 'Confirm Order',  next: 'confirmed', bg: '#7C3AED' },
-  confirmed: { label: 'Mark Packed',   next: 'packed',    bg: '#D97706' },
-  packed:    { label: 'Mark Shipped',  next: 'shipped',   bg: '#0891B2' },
+  placed:    { label: 'Confirm Order', next: 'confirmed', bg: '#7C3AED' },
+  confirmed: { label: 'Mark Packed',  next: 'packed',    bg: '#D97706' },
+  packed:    { label: 'Mark Shipped', next: 'shipped',   bg: '#0891B2' },
+  // shipped, out_for_delivery, delivered — delivery boy handles, no seller button
 }
-
 /* ─── STATUS PILL ─── */
 function Pill({ status }) {
   const c = STATUS_CFG[status] || STATUS_CFG.placed
@@ -214,7 +213,7 @@ function OrderCard({ order, onStatusChange }) {
         <Pipeline status={order.status} />
 
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-          {advance && order.status !== 'cancelled' && (
+          {advance && !['shipped','out_for_delivery','delivered'].includes(order.status) && order.status !== 'cancelled' && (
             <>
               <button
                 onClick={handleAdvance}

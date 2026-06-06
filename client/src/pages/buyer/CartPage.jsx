@@ -1,16 +1,40 @@
 import { useNavigate } from 'react-router-dom'
 import useCartStore from '../../context/useCartStore.js'
+import useAuthStore from '../../context/useAuthStore.js'
 
 const f = 'Poppins, sans-serif'
 
 export default function CartPage() {
   const navigate = useNavigate()
   const { items, removeItem, updateQuantity, totalAmount, totalMRP, totalSavings } = useCartStore()
+  const { user } = useAuthStore()
 
   const total    = totalAmount()
   const mrp      = totalMRP()
   const savings  = totalSavings()
-  const shipping = total >= 499 ? 0 : 49
+  const WEIGHT_SLABS = [
+  { maxG: 500,   mid: 47  },
+  { maxG: 1000,  mid: 70  },
+  { maxG: 1500,  mid: 97  },
+  { maxG: 2000,  mid: 130 },
+  { maxG: 3000,  mid: 175 },
+  { maxG: 5000,  mid: 237 },
+  { maxG: 10000, mid: 335 },
+]
+
+const totalWeightG = items.reduce((acc, item) => {
+  const w = item.shippingWeight || 500
+  return acc + w * item.quantity
+}, 0)
+
+const calcShipping = (weightG, subtotal) => {
+  if (subtotal >= 499) return 0
+  const rounded = Math.ceil(Math.max(weightG, 100) / 500) * 500
+  const slab = WEIGHT_SLABS.find(s => rounded <= s.maxG) || WEIGHT_SLABS[WEIGHT_SLABS.length - 1]
+  return slab.mid
+}
+
+const shipping = calcShipping(totalWeightG, total)
 
   if (items.length === 0) return (
     <div style={{ minHeight: '100vh', background: '#F9F9FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: f }}>
@@ -31,7 +55,7 @@ export default function CartPage() {
 
       {/* Header */}
       <header style={{ background: 'white', padding: '0 20px', height: '60px', display: 'flex', alignItems: 'center', gap: '14px', borderBottom: '1px solid #EBEBF0', position: 'sticky', top: 0, zIndex: 30, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-        <button onClick={() => navigate(-1)} style={{ background: '#F9F9FB', border: '1px solid #EBEBF0', width: '36px', height: '36px', borderRadius: '0%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
+        <button onClick={() => navigate('/home')} style={{ background: '#F9F9FB', border: '1px solid #EBEBF0', width: '36px', height: '36px', borderRadius: '0%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
         <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#1A1A2E', margin: 0, flex: 1 }}>My Cart</h1>
         <span style={{ fontSize: '12px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', padding: '3px 10px', borderRadius: '0px', fontWeight: '700' }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
       </header>
@@ -128,7 +152,13 @@ export default function CartPage() {
         </div>
 
         {/* Checkout button */}
-        <button onClick={() => navigate('/checkout')}
+        <button onClick={() => {
+            if (!user) {
+              navigate('/login?redirect=/checkout')
+              return
+            }
+            navigate('/checkout')
+          }}
           style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', border: 'none', borderRadius: '0px', cursor: 'pointer', fontWeight: '800', fontSize: '16px', fontFamily: f, boxShadow: '0 6px 20px rgba(233,30,140,0.3)', transition: 'all 0.2s' }}>
           Proceed to Checkout — ₹{(total + shipping).toLocaleString('en-IN')}
         </button>

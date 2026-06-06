@@ -158,6 +158,7 @@ export default function AdminDashboard() {
                 { path:'/admin/buyers',   label:'Buyers',   emoji:'👥', color:'text-blue-500',   bg:'bg-blue-50'   },
                 { path:'/admin/orders',   label:'Orders',   emoji:'📦', color:'text-teal-500',   bg:'bg-teal-50'   },
                 { path:'/admin/reviews',  label:'Reviews',  emoji:'⭐', color:'text-amber-500',  bg:'bg-amber-50'  },
+              { path:'/admin/delivery-partners', label:'Delivery', emoji:'🛵', color:'text-green-500', bg:'bg-green-50' },
               ].map((link) => (
                 <button key={link.path} onClick={() => navigate(link.path)}
                   className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-center group">

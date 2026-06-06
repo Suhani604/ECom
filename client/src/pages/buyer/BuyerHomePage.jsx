@@ -842,7 +842,7 @@ export default function BuyerHomePage() {
                   const isHovered  = hoveredProduct === product._id
                   return (
                     <div key={product._id}
-                      onClick={() => user ? navigate(`/product/${product._id}`) : navigate('/login')}
+                      onClick={() => navigate(`/product/${product._id}`)}
                       onMouseEnter={() => setHoveredProduct(product._id)}
                       onMouseLeave={() => setHoveredProduct(null)}
                       style={{ background: 'white', overflow: 'hidden', cursor: 'pointer', border: '1px solid #EBEBF0', borderRadius: isMobile ? '8px' : '4px', transition: 'all 0.22s', boxShadow: isHovered ? '0 16px 40px rgba(233,30,140,0.14)' : '0 2px 8px rgba(0,0,0,0.04)', transform: isHovered && !isMobile ? 'translateY(-6px) scale(1.01)' : 'none' }}>

@@ -9,6 +9,7 @@ const f = '"DM Sans", Poppins, sans-serif'
 export default function BuyerSignupPage() {
   const navigate   = useNavigate()
   const storeLogin = useAuthStore((s) => s.login)
+  const redirectTo = new URLSearchParams(window.location.search).get('redirect')
   const [step,    setStep]    = useState(1)
   const [loading, setLoading] = useState(false)
   const [userId,  setUserId]  = useState(null)
@@ -41,7 +42,11 @@ export default function BuyerSignupPage() {
       const { data } = await api.post('/auth/verify-otp', { userId, otp })
       storeLogin(data.user, data.token)
       toast.success('Account created! Happy shopping 🛍️')
-      navigate('/home', { replace: true })
+      if (redirectTo) {
+        navigate(redirectTo, { replace: true })
+      } else {
+        navigate('/home', { replace: true })
+}
     } catch (err) { toast.error(err.response?.data?.message || 'Invalid OTP') }
     finally { setLoading(false) }
   }
@@ -77,7 +82,9 @@ export default function BuyerSignupPage() {
         {/* Main nav row */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '60px 0' }}>
           {/* Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div 
+           onClick={() => navigate('/home')}
+           style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(233,30,140,0.4)', flexShrink: 0 }}>
               <span style={{ color: 'white', fontSize: '25px', fontWeight: '800' }}>S</span>
             </div> 

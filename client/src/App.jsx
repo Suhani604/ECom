@@ -35,7 +35,15 @@ import AdminReviewsPage  from './pages/admin/AdminReviewsPage.jsx'
 import SellerReviewsPage from './pages/seller/SellerReviewsPage.jsx'
 import AdminBannersPage from './pages/admin/AdminBannersPage.jsx'
 import AdminCategoryPage from './pages/admin/AdminCategoryPage.jsx'
-
+import DeliveryProtectedRoute    from './components/common/DeliveryProtectedRoute.jsx'
+import DeliveryLoginPage         from './pages/delivery/DeliveryLoginPage.jsx'
+import DeliveryRegisterPage      from './pages/delivery/DeliveryRegisterPage.jsx'
+import DeliveryDashboardPage     from './pages/delivery/DeliveryDashboardPage.jsx'
+import DeliveryOrdersPage        from './pages/delivery/DeliveryOrdersPage.jsx'
+import DeliveryOrderDetailPage   from './pages/delivery/DeliveryOrderDetailPage.jsx'
+import DeliveryEarningsPage      from './pages/delivery/DeliveryEarningsPage.jsx'
+import DeliveryProfilePage       from './pages/delivery/DeliveryProfilePage.jsx'
+import AdminDeliveryPartnersPage from './pages/admin/AdminDeliveryPartnersPage.jsx'
 
 export default function App() {
   return (
@@ -53,16 +61,13 @@ export default function App() {
         <Route path="/signup/seller"   element={<SellerSignupPage />} />
 
         {/* ── Buyer protected ────────────────────────────────────── */}
-        <Route path="/product/:id"
-          element={<ProtectedRoute role="buyer"><ProductDetailPage /></ProtectedRoute>} />
-        <Route path="/cart"
-          element={<ProtectedRoute role="buyer"><CartPage /></ProtectedRoute>} />
-        <Route path="/checkout"
-          element={<ProtectedRoute role="buyer"><CheckoutPage /></ProtectedRoute>} />
-        <Route path="/order-success/:id"
-          element={<ProtectedRoute role="buyer"><OrderSuccessPage /></ProtectedRoute>} />
-        <Route path="/orders"
-          element={<ProtectedRoute role="buyer"><MyOrdersPage /></ProtectedRoute>} />
+       <Route path="/product/:id"
+                                       element={<ProductDetailPage />} />    <Route path="/cart"
+                                       element={<CartPage />} />             <Route path="/checkout"
+                                       element={<CheckoutPage />} />         <Route path="/order-success/:id"
+                                       element={<ProtectedRoute role="buyer"><OrderSuccessPage /></ProtectedRoute>} />
+        <Route path="/orders"          element={<ProtectedRoute role="buyer"><MyOrdersPage /></ProtectedRoute>} />
+        <Route path="/order/:id"       element={<ProtectedRoute role="buyer"><MyOrdersPage /></ProtectedRoute>} />
         <Route path="/wishlist"        element={<WishlistPage />} />
         <Route path="/profile"         element={<ProfilePage />} />
         <Route path="/review/:orderId/:productId"
@@ -107,7 +112,21 @@ export default function App() {
           // ...
         <Route path="/admin/banners" element={<ProtectedRoute role="admin"><AdminBannersPage /></ProtectedRoute>} />
         <Route path="/admin/categories" element={<ProtectedRoute role="admin"><AdminCategoryPage /></ProtectedRoute>} />
-
+        <Route path="/admin/delivery-partners"
+  element={<ProtectedRoute role="admin"><AdminDeliveryPartnersPage /></ProtectedRoute>} />
+              {/* ── Delivery Partner ───────────────────────────────────── */}
+      <Route path="/delivery/login"    element={<DeliveryLoginPage />} />
+      <Route path="/delivery/register" element={<DeliveryRegisterPage />} />
+      <Route path="/delivery/dashboard"
+        element={<DeliveryProtectedRoute><DeliveryDashboardPage /></DeliveryProtectedRoute>} />
+      <Route path="/delivery/orders"
+        element={<DeliveryProtectedRoute><DeliveryOrdersPage /></DeliveryProtectedRoute>} />
+      <Route path="/delivery/orders/:id"
+        element={<DeliveryProtectedRoute><DeliveryOrderDetailPage /></DeliveryProtectedRoute>} />
+      <Route path="/delivery/earnings"
+        element={<DeliveryProtectedRoute><DeliveryEarningsPage /></DeliveryProtectedRoute>} />
+      <Route path="/delivery/profile"
+        element={<DeliveryProtectedRoute><DeliveryProfilePage /></DeliveryProtectedRoute>} />
         
 
         <Route path="*" element={<Navigate to="/" replace />} />
