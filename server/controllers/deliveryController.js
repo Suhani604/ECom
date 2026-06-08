@@ -205,10 +205,17 @@ export const resendOTP = async (req, res) => {
     await order.save()
 
     // SMS send karo customer ko
-    if (order.buyer?.phone) {
-      await sendOTPSMS(order.buyer.phone, newOTP)
-      console.log(`OTP ${newOTP} sent to ${order.buyer.phone}`)
-    }
+    // Always print OTP in terminal
+console.log(`🔑 Delivery OTP for order ${order._id}: ${newOTP}`)
+
+if (order.buyer?.phone) {
+  try {
+    await sendOTPSMS(order.buyer.phone, newOTP)
+    console.log(`✅ SMS sent to ${order.buyer.phone}`)
+  } catch (smsErr) {
+    console.log(`❌ SMS failed: ${smsErr.message}`)
+  }
+}
 
     res.json({ message: 'OTP sent to customer via SMS!' })
   } catch (err) {

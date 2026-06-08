@@ -78,7 +78,7 @@ export default function AdminOrdersPage() {
   setAssigning(orderId)
   try {
     const { data } = await api.put(`/admin/orders/${orderId}/assign-delivery`)
-    toast.success(`Assigned to ${data.data?.deliveryPartner?.name}! OTP: ${data.data?.otp}`)
+    toast.success(`Assigned to ${data.data?.deliveryPartner?.name || data.data?.name || 'Delivery Partner'}! OTP: ${data.data?.otp || data.data?.deliveryOTP || 'Check DB'}`)
     fetchOrders()
   } catch (e) {
     toast.error(e.response?.data?.message || 'No delivery partner available')
