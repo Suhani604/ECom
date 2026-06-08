@@ -481,7 +481,6 @@ export const getSellerOrders = async (req, res) => {
 
   return successResponse(res, 'Orders fetched', { orders: result, total })
 }
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // UPDATE ORDER STATUS
 // ═══════════════════════════════════════════════════════════════════════════════
