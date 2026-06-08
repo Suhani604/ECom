@@ -14,7 +14,6 @@ const LINKS = [
   { path: '/admin/reviews',   label: 'Reviews',   Icon: FiStar },
   { path: '/admin/banners',   label: 'Banners',   Icon: FiImage },
   // LINKS array mein Banners ke neeche add karo
-  { path: '/admin/categories', label: 'Categories', Icon: FiLayers },
   { path: '/admin/categories',         label: 'Categories', Icon: FiLayers },
   { path: '/admin/delivery-partners',  label: 'Delivery',   Icon: FiTruck  },
 ]

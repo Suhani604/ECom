@@ -273,7 +273,7 @@ export default function AdminOrdersPage() {
                         })}
                       </div>
 
-                      {order.status === 'packed' && !order.deliveryBoy && (
+                      {['packed', 'shipped'].includes(order.status) && !order.deliveryBoy && (
                           <button className="next-btn"
                             disabled={assigning === order._id}
                             onClick={() => assignDelivery(order._id)}
