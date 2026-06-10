@@ -1,9 +1,12 @@
 import express from 'express'
 import Product from '../models/Product.js'
 // ✅ CORRECT — one import line
-import { getProducts, getProductById, debugProducts } from '../controllers/productController.js'
+import { getProducts, getProductById, debugProducts, getProductFilters } from '../controllers/productController.js'
 
 const router = express.Router()
+
+// ── FIX: dynamic filters endpoint — MUST be before /:id ──
+router.get('/filters', getProductFilters)
 
 router.get('/',    getProducts)
 router.get('/:id', getProductById)

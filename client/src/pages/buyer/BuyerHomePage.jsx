@@ -354,16 +354,26 @@ function Footer({ navigate, isMobile }) {
 }
 
 // ── Sidebar Filter Content (shared between desktop + mobile drawer) ────────────
-function FilterContent({ selectedSubs, toggleSub, displayedSubs, currentSubs, showAllSubcats, setShowAllSubcats, currentBrands, selectedBrands, toggleBrand, priceRange, setPriceRange, selectedColors, toggleColor, selectedDiscount, setSelectedDiscount, COLORS, DISCOUNT_OPTIONS, hasActiveFilters, clearFilters }) {
+function FilterContent({ selectedSubs, toggleSub, displayedSubs, currentSubs, showAllSubcats, setShowAllSubcats, currentBrands, selectedBrands, toggleBrand, priceRange, setPriceRange, selectedColors, toggleColor, selectedDiscount, setSelectedDiscount, COLORS, DISCOUNT_OPTIONS, hasActiveFilters, clearFilters, filtersLoading }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         {hasActiveFilters ? <button onClick={clearFilters} style={{ fontSize: '11px', fontWeight: '700', color: '#E91E8C', background: '#FDF2F8', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontFamily: f }}>Clear all</button> : <span />}
       </div>
+
+      {/* ── FIX: loading skeleton for filters ── */}
+      {filtersLoading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} style={{ height: '14px', borderRadius: '4px', background: 'linear-gradient(90deg,#F1F5F9,#E2E8F0,#F1F5F9)', backgroundSize: '200% 100%', animation: 'shimmer 1.2s infinite', width: i % 2 === 0 ? '70%' : '85%' }} />
+          ))}
+        </div>
+      ) : (
+        <>
       <div style={{ marginBottom: '18px', paddingBottom: '14px', borderBottom: '1px solid #F1F5F9' }}>
         <p style={{ fontSize: '11px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '1px' }}>CATEGORIES</p>
-        {displayedSubs.map(s => (
-          <label key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer' }}>
+        {displayedSubs.map((s, i) => (
+          <label key={`sub-${i}-${s}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer' }}>
             <input type="checkbox" checked={selectedSubs.includes(s)} onChange={() => toggleSub(s)} style={{ accentColor: '#E91E8C', width: '14px', height: '14px' }} />
             <span style={{ fontSize: '12px', color: '#374151', fontWeight: selectedSubs.includes(s) ? '700' : '500' }}>{s}</span>
           </label>
@@ -376,7 +386,7 @@ function FilterContent({ selectedSubs, toggleSub, displayedSubs, currentSubs, sh
       </div>
       <div style={{ marginBottom: '18px', paddingBottom: '14px', borderBottom: '1px solid #F1F5F9' }}>
         <p style={{ fontSize: '11px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '1px' }}>BRAND</p>
-        {currentBrands.slice(0, 6).map((brand, i) => (
+        {currentBrands.map((brand, i) => (
           <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer' }}>
             <input type="checkbox" checked={selectedBrands.includes(brand.name)} onChange={() => toggleBrand(brand.name)} style={{ accentColor: '#E91E8C', width: '14px', height: '14px' }} />
             <span style={{ fontSize: '12px', color: '#374151', fontWeight: selectedBrands.includes(brand.name) ? '700' : '500' }}>{brand.name}</span>
@@ -402,13 +412,15 @@ function FilterContent({ selectedSubs, toggleSub, displayedSubs, currentSubs, sh
       </div>
       <div>
         <p style={{ fontSize: '11px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '1px' }}>DISCOUNT RANGE</p>
-        {DISCOUNT_OPTIONS.map(d => (
-          <label key={d} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer' }}>
+        {DISCOUNT_OPTIONS.map((d, i) => (
+          <label key={`disc-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer' }}>
             <input type="radio" name="discount" checked={selectedDiscount === d} onChange={() => setSelectedDiscount(prev => prev === d ? '' : d)} style={{ accentColor: '#E91E8C', width: '14px', height: '14px' }} />
             <span style={{ fontSize: '12px', color: '#374151', fontWeight: selectedDiscount === d ? '700' : '500' }}>{d}</span>
           </label>
         ))}
       </div>
+        </>
+      )}
     </>
   )
 }
@@ -437,6 +449,12 @@ export default function BuyerHomePage() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [mobileCatOpen,    setMobileCatOpen]    = useState(false)
 
+  // ── FIX: dynamic filter data from DB ────────────────────────────────────────
+  const [dynBrands,     setDynBrands]     = useState([])
+  const [dynColors,     setDynColors]     = useState([])
+  const [dynCategories, setDynCategories] = useState([])
+  const [filtersLoading, setFiltersLoading] = useState(false)
+
   const [activeBanners,   setActiveBanners]   = useState([])
   const [promoBanners,    setPromoBanners]    = useState([])
   const [categoryBanners, setCategoryBanners] = useState([])
@@ -451,8 +469,28 @@ export default function BuyerHomePage() {
 
   const cartCount     = items.reduce((s, i) => s + i.quantity, 0)
   const wishlistCount = wishlistItems.length
-  const currentBrands = BRANDS[category] || BRANDS['']
-  const currentSubs   = SUB_CATS[category] || SUB_CATS['']
+
+  // ── FIX: use dynamic data if loaded, else static fallback ───────────────────
+  const currentBrands = dynBrands.length
+    ? dynBrands.map(name => {
+        // Try to find color/bg from static BRANDS for styling, else use defaults
+        const staticList = [...(BRANDS[category] || []), ...(BRANDS[''] || [])]
+        const found = staticList.find(b => b.name.toLowerCase() === name.toLowerCase())
+        return found || { name, color: '#E91E8C', bg: '#FDF2F8' }
+      })
+    : (BRANDS[category] || BRANDS[''])
+
+  const currentSubs = dynCategories.length
+    ? dynCategories
+    : (SUB_CATS[category] || SUB_CATS[''])
+
+  // ── FIX: dynamic color swatches — merge DB colors with static COLORS list ───
+  const activeColors = dynColors.length
+    ? dynColors.map(name => {
+        const found = COLORS.find(c => c.name.toLowerCase() === name.toLowerCase())
+        return found || { name, hex: '#94A3B8' }
+      })
+    : COLORS
 
   useEffect(() => { localStorage.setItem('sh_recent', JSON.stringify(recentSearches)) }, [recentSearches])
 
@@ -485,6 +523,23 @@ export default function BuyerHomePage() {
   }, [])
 
   useEffect(() => { setSelectedSubs([]); setSelectedBrands([]); setSelectedColors([]); setSelectedDiscount(''); setShowAllSubcats(false); setSearch('') }, [category])
+
+  // ── FIX: fetch dynamic filters from DB whenever category changes ─────────────
+  useEffect(() => {
+    setFiltersLoading(true)
+    const params = {}
+    if (category) params.category = category
+    api.get('/products/filters', { params })
+      .then(({ data }) => {
+        const d = data.data || {}
+        if (d.brands?.length)        setDynBrands(d.brands)
+        if (d.colors?.length)        setDynColors(d.colors)
+        if (d.categories?.length)    setDynCategories(d.categories)
+        // If no data returned, fall back to static (states stay empty → fallback used)
+      })
+      .catch(() => { /* silently use static fallback */ })
+      .finally(() => setFiltersLoading(false))
+  }, [category])
 
   useEffect(() => {
     setLoading(true)
@@ -530,7 +585,7 @@ export default function BuyerHomePage() {
   })
   const activeMegaCols = activeMenu ? megaMenuData[activeMenu] : null
 
-  const filterProps = { selectedSubs, toggleSub, displayedSubs, currentSubs, showAllSubcats, setShowAllSubcats, currentBrands, selectedBrands, toggleBrand, priceRange, setPriceRange, selectedColors, toggleColor, selectedDiscount, setSelectedDiscount, COLORS, DISCOUNT_OPTIONS, hasActiveFilters, clearFilters }
+  const filterProps = { selectedSubs, toggleSub, displayedSubs, currentSubs, showAllSubcats, setShowAllSubcats, currentBrands, selectedBrands, toggleBrand, priceRange, setPriceRange, selectedColors, toggleColor, selectedDiscount, setSelectedDiscount, COLORS: activeColors, DISCOUNT_OPTIONS, hasActiveFilters, clearFilters, filtersLoading }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F7F7F9', fontFamily: f }}>

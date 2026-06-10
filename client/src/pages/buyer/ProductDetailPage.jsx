@@ -201,15 +201,11 @@ const [geoDetected, setGeoDetected] = useState(null)
           const uniqueParts = [...new Set(parts)]
           const fullAddress = uniqueParts.join(', ') + (pin ? ` - ${pin}` : '') + (state ? `, ${state}` : '')
 
-          setGeoDetected({
-            lat: latitude,
-            lon: longitude,
-            accuracy: Math.round(accuracy),
-            address: fullAddress,
-            district,
-            state,
-          })
+         const geoData = { lat: latitude, lon: longitude, accuracy: Math.round(accuracy), address: fullAddress, district, state, city, pin: pin || '', road, suburb, village }
+          setGeoDetected(geoData)
 
+          try { localStorage.setItem('vg_geo', JSON.stringify(geoData)) } catch {}
+          
           if (pin && /^\d{6}$/.test(pin)) {
             setPincode(pin)
             setChecking(true)

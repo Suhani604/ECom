@@ -2,17 +2,16 @@ import User     from '../models/User.js'
 import Product  from '../models/Product.js'
 import Order    from '../models/Order.js'
 import { successResponse, errorResponse, paginatedResponse } from '../utils/responseHelper.js'
-import { io }   from '../server.js'
+import { sendOTPSMS } from '../utils/smsHelper.js'
+// ── FIX: removed circular import { io } from '../server.js'
+// io is now fetched via req.app.get('io') in each function that needs it
 import {
   emitSellerApproved, emitSellerRejected,
-  emitProductApproved, emitProductRejected,emitDeliveryAssigned
+  emitProductApproved, emitProductRejected, emitDeliveryAssigned
 } from '../sockets/socketEmit.js'
 import DeliveryPartner from '../models/DeliveryPartner.js'
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // GET ALL DELIVERY PARTNERS
-// GET /api/admin/delivery-partners
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getAllDeliveryPartners = async (req, res) => {
   try {
     const partners = await DeliveryPartner.find()
@@ -24,10 +23,7 @@ export const getAllDeliveryPartners = async (req, res) => {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // APPROVE DELIVERY PARTNER
-// PUT /api/admin/delivery-partners/:id/approve
-// ═══════════════════════════════════════════════════════════════════════════════
 export const approveDeliveryPartner = async (req, res) => {
   try {
     const dp = await DeliveryPartner.findById(req.params.id)
@@ -40,10 +36,7 @@ export const approveDeliveryPartner = async (req, res) => {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ASSIGN DELIVERY PARTNER TO ORDER (by pincode/area match)
-// PUT /api/admin/orders/:id/assign-delivery
-// ═══════════════════════════════════════════════════════════════════════════════
+// ASSIGN DELIVERY PARTNER TO ORDER
 export const assignDeliveryPartner = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -75,43 +68,61 @@ export const assignDeliveryPartner = async (req, res) => {
     // Generate 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString()
 
-    order.deliveryBoy  = dp._id
-    order.deliveryOTP  = otp
-    order.status       = 'shipped'
+    order.deliveryBoy = dp._id
+    order.deliveryOTP = otp
+    order.status      = 'shipped'
     order.statusHistory.push({
       status: 'shipped',
       note: `Assigned to ${dp.name}`,
       updatedAt: new Date(),
     })
-    await order.save()
+    await order.save()  // ── OTP saved to DB BEFORE any socket/SMS call
 
     // Mark partner as unavailable
     dp.isAvailable = false
     await dp.save()
 
-    // Real-time notify
-    const sellerId = order.items[0]?.seller
-    emitDeliveryAssigned(io, {
-      orderId:         order._id,
-      deliveryBoyId:   dp._id,
-      buyerId:         order.buyer._id,
-      sellerId,
-      deliveryBoyName: dp.name,
-    })
+    // ── Always log OTP in terminal ──────────────────────────────────────────
+    console.log(`\n🔑 ====================================`)
+    console.log(`🔑 DELIVERY OTP : ${otp}`)
+    console.log(`🔑 Order ID     : ${order._id}`)
+    console.log(`🔑 Customer     : ${order.buyer?.name} (${order.buyer?.phone})`)
+    console.log(`🔑 Delivery Boy : ${dp.name}`)
+    console.log(`🔑 ====================================\n`)
+
+    // ── Send SMS to customer ────────────────────────────────────────────────
+    if (order.buyer?.phone) {
+      try {
+        await sendOTPSMS(order.buyer.phone, otp)
+        console.log(`✅ OTP SMS sent to ${order.buyer.phone}`)
+      } catch (smsErr) {
+        console.log(`❌ SMS failed (OTP still saved in DB): ${smsErr.message}`)
+      }
+    }
+
+    // ── FIX: get io from req.app to avoid circular import ──────────────────
+    const io = req.app.get('io')
+    if (io) {
+      const sellerId = order.items[0]?.seller
+      emitDeliveryAssigned(io, {
+        orderId:         order._id,
+        deliveryBoyId:   dp._id,
+        buyerId:         order.buyer._id,
+        sellerId,
+        deliveryBoyName: dp.name,
+      })
+    }
 
     return successResponse(res, `Order assigned to ${dp.name}`, {
       deliveryPartner: { name: dp.name, phone: dp.phone },
-      otp, // Admin ko dikhao OTP (for reference)
+      otp,
     })
   } catch (err) {
     return errorResponse(res, err.message, 500)
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // GET DELIVERY PARTNERS LIVE MAP DATA
-// GET /api/admin/delivery-partners/live
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getLiveDeliveryMap = async (req, res) => {
   try {
     const partners = await DeliveryPartner.find({ isOnline: true })
@@ -122,20 +133,11 @@ export const getLiveDeliveryMap = async (req, res) => {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD STATS
-// GET /api/admin/dashboard
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getDashboardStats = async (req, res) => {
   const [
-    totalBuyers,
-    totalSellers,
-    approvedSellers,
-    pendingSellers,
-    totalProducts,
-    activeProducts,
-    pendingProducts,
-    totalOrders,
+    totalBuyers, totalSellers, approvedSellers, pendingSellers,
+    totalProducts, activeProducts, pendingProducts, totalOrders,
   ] = await Promise.all([
     User.countDocuments({ role: 'buyer' }),
     User.countDocuments({ role: 'seller' }),
@@ -155,10 +157,7 @@ export const getDashboardStats = async (req, res) => {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const recentOrders = await Order.countDocuments({ createdAt: { $gte: sevenDaysAgo } })
-  const newSellersThisWeek = await User.countDocuments({
-    role: 'seller',
-    createdAt: { $gte: sevenDaysAgo },
-  })
+  const newSellersThisWeek = await User.countDocuments({ role: 'seller', createdAt: { $gte: sevenDaysAgo } })
 
   return successResponse(res, 'Dashboard stats', {
     stats: {
@@ -169,10 +168,7 @@ export const getDashboardStats = async (req, res) => {
   })
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // GET ALL SELLERS
-// GET /api/admin/sellers?page=1&limit=10&status=pending
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getAllSellers = async (req, res) => {
   const page   = parseInt(req.query.page)  || 1
   const limit  = parseInt(req.query.limit) || 10
@@ -192,90 +188,61 @@ export const getAllSellers = async (req, res) => {
   }
 
   const [sellers, total] = await Promise.all([
-    User.find(filter)
-      .select('-password -otp -otpExpiry')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
+    User.find(filter).select('-password -otp -otpExpiry').sort({ createdAt: -1 }).skip(skip).limit(limit),
     User.countDocuments(filter),
   ])
-
   return paginatedResponse(res, 'Sellers fetched', sellers, page, limit, total)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // GET SINGLE SELLER
-// GET /api/admin/sellers/:id
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getSellerById = async (req, res) => {
-  const seller = await User.findOne({ _id: req.params.id, role: 'seller' })
-    .select('-password -otp -otpExpiry')
+  const seller = await User.findOne({ _id: req.params.id, role: 'seller' }).select('-password -otp -otpExpiry')
   if (!seller) return errorResponse(res, 'Seller not found', 404)
-
   const products = await Product.find({ seller: seller._id })
-    .select('title status images sellingPrice createdAt')
-    .sort({ createdAt: -1 })
-    .limit(10)
-
+    .select('title status images sellingPrice createdAt').sort({ createdAt: -1 }).limit(10)
   return successResponse(res, 'Seller fetched', { seller, products })
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // APPROVE SELLER
-// PUT /api/admin/sellers/:id/approve
-// ═══════════════════════════════════════════════════════════════════════════════
 export const approveSeller = async (req, res) => {
   const seller = await User.findOne({ _id: req.params.id, role: 'seller' })
   if (!seller) return errorResponse(res, 'Seller not found', 404)
-
   seller.sellerDetails.approvalStatus  = 'approved'
   seller.sellerDetails.approvedAt      = new Date()
   seller.sellerDetails.rejectionReason = ''
   await seller.save()
-
-  emitSellerApproved(io, { sellerId: seller._id })
+  // ── FIX: req.app.get('io') ─────────────────────────────────────────────────
+  const io = req.app.get('io')
+  if (io) emitSellerApproved(io, { sellerId: seller._id })
   return successResponse(res, `Seller "${seller.name}" approved successfully`)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // REJECT SELLER
-// PUT /api/admin/sellers/:id/reject
-// ═══════════════════════════════════════════════════════════════════════════════
 export const rejectSeller = async (req, res) => {
   const { reason } = req.body
   if (!reason) return errorResponse(res, 'Rejection reason is required')
-
   const seller = await User.findOne({ _id: req.params.id, role: 'seller' })
   if (!seller) return errorResponse(res, 'Seller not found', 404)
-
   seller.sellerDetails.approvalStatus  = 'rejected'
   seller.sellerDetails.rejectionReason = reason
   await seller.save()
-
-  emitSellerRejected(io, { sellerId: seller._id, reason })
+  const io = req.app.get('io')
+  if (io) emitSellerRejected(io, { sellerId: seller._id, reason })
   return successResponse(res, `Seller "${seller.name}" rejected`)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // SUSPEND / UNSUSPEND SELLER
-// PUT /api/admin/sellers/:id/suspend
-// ═══════════════════════════════════════════════════════════════════════════════
 export const suspendSeller = async (req, res) => {
   const seller = await User.findOne({ _id: req.params.id, role: 'seller' })
   if (!seller) return errorResponse(res, 'Seller not found', 404)
-
   const isSuspended = seller.sellerDetails.approvalStatus === 'suspended'
   seller.sellerDetails.approvalStatus = isSuspended ? 'approved' : 'suspended'
   seller.isActive = isSuspended
   await seller.save()
-
   return successResponse(res, isSuspended ? 'Seller unsuspended' : 'Seller suspended')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // GET ALL PRODUCTS
-// GET /api/admin/products?page=1&status=pending
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getAllProducts = async (req, res) => {
   const page     = parseInt(req.query.page)  || 1
   const limit    = parseInt(req.query.limit) || 12
@@ -295,60 +262,40 @@ export const getAllProducts = async (req, res) => {
   const [products, total] = await Promise.all([
     Product.find(filter)
       .populate('seller', 'name email sellerDetails.businessName')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
+      .sort({ createdAt: -1 }).skip(skip).limit(limit),
     Product.countDocuments(filter),
   ])
-
   return paginatedResponse(res, 'Products fetched', products, page, limit, total)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // APPROVE PRODUCT
-// PUT /api/admin/products/:id/approve
-// ═══════════════════════════════════════════════════════════════════════════════
 export const approveProduct = async (req, res) => {
   const product = await Product.findById(req.params.id).populate('seller', 'name')
   if (!product) return errorResponse(res, 'Product not found', 404)
-
   product.status          = 'active'
   product.approvedAt      = new Date()
   product.rejectionReason = ''
   await product.save()
-
-  emitProductApproved(io, {
-    sellerId: product.seller._id, productId: product._id, productTitle: product.title,
-  })
+  const io = req.app.get('io')
+  if (io) emitProductApproved(io, { sellerId: product.seller._id, productId: product._id, productTitle: product.title })
   return successResponse(res, `Product "${product.title}" approved and is now live`)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // REJECT PRODUCT
-// PUT /api/admin/products/:id/reject
-// ═══════════════════════════════════════════════════════════════════════════════
 export const rejectProduct = async (req, res) => {
   const { reason } = req.body
   if (!reason) return errorResponse(res, 'Rejection reason is required')
-
   const product = await Product.findById(req.params.id).populate('seller', 'name')
   if (!product) return errorResponse(res, 'Product not found', 404)
-
   product.status          = 'rejected'
   product.rejectionReason = reason
   await product.save()
-
-  emitProductRejected(io, {
-    sellerId: product.seller._id, productId: product._id,
-    productTitle: product.title, reason,
-  })
+  const io = req.app.get('io')
+  if (io) emitProductRejected(io, { sellerId: product.seller._id, productId: product._id, productTitle: product.title, reason })
   return successResponse(res, `Product "${product.title}" rejected`)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // GET ALL BUYERS
-// GET /api/admin/buyers?page=1&search=
-// ═══════════════════════════════════════════════════════════════════════════════
 export const getAllBuyers = async (req, res) => {
   const page   = parseInt(req.query.page)  || 1
   const limit  = parseInt(req.query.limit) || 10
@@ -365,36 +312,23 @@ export const getAllBuyers = async (req, res) => {
   }
 
   const [buyers, total] = await Promise.all([
-    User.find(filter)
-      .select('-password -otp -otpExpiry')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
+    User.find(filter).select('-password -otp -otpExpiry').sort({ createdAt: -1 }).skip(skip).limit(limit),
     User.countDocuments(filter),
   ])
-
   return paginatedResponse(res, 'Buyers fetched', buyers, page, limit, total)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // BLOCK / UNBLOCK USER
-// PUT /api/admin/users/:id/block
-// ═══════════════════════════════════════════════════════════════════════════════
 export const toggleBlockUser = async (req, res) => {
   const user = await User.findById(req.params.id)
   if (!user) return errorResponse(res, 'User not found', 404)
   if (user.role === 'admin') return errorResponse(res, 'Cannot block admin', 403)
-
   user.isActive = !user.isActive
   await user.save()
-
   return successResponse(res, user.isActive ? 'User unblocked' : 'User blocked')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// GET ALL ORDERS (admin view)
-// GET /api/admin/orders?page=1&status=
-// ═══════════════════════════════════════════════════════════════════════════════
+// GET ALL ORDERS
 export const getAllOrders = async (req, res) => {
   const page   = parseInt(req.query.page)  || 1
   const limit  = parseInt(req.query.limit) || 10
@@ -412,33 +346,19 @@ export const getAllOrders = async (req, res) => {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
-  .populate('buyer', 'name email phone')
-  .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit),
+      .populate('buyer', 'name email phone')
+      .sort({ updatedAt: -1 }).skip(skip).limit(limit),
     Order.countDocuments(filter),
   ])
-
   return paginatedResponse(res, 'Orders fetched', orders, page, limit, total)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // UPDATE ORDER STATUS (admin)
-// PUT /api/admin/orders/:id/status
-//
-// ROLE SPLIT:
-//   Seller  → placed → confirmed → packed → shipped
-//   Admin   → shipped → out_for_delivery → delivered  (+ can cancel anything)
-//
-// Admin button shown only when order is shipped or beyond.
-// Admin can also cancel any order at any stage.
-// ═══════════════════════════════════════════════════════════════════════════════
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id }     = req.params
     const { status } = req.body
 
-    // All valid statuses in the system
     const allStatuses = [
       'placed', 'confirmed', 'packed', 'shipped',
       'out_for_delivery', 'delivered',
@@ -450,28 +370,15 @@ export const updateOrderStatus = async (req, res) => {
     const order = await Order.findById(id)
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
-    // ── Admin handoff rule ──────────────────────────────────────────────────
-    // Admin takes over AFTER seller has marked shipped.
-    // Admin can advance: shipped → out_for_delivery → delivered
-    // Admin can also cancel any order at any point.
-    // Admin CANNOT go backwards or skip steps.
-    // ─────────────────────────────────────────────────────────────────────────
-
     const adminFlow = {
       shipped:          'out_for_delivery',
       out_for_delivery: 'delivered',
     }
 
-    // If not cancelling, enforce the admin flow order
     if (status !== 'cancelled' && status !== 'return_requested' && status !== 'returned') {
       const expectedNext = adminFlow[order.status]
-
-      // If the current status is in the SELLER zone (placed/confirmed/packed)
-      // admin should not be advancing — warn but allow in dev mode
-      const sellerZone = ['placed', 'confirmed', 'packed']
-      if (sellerZone.includes(order.status) && sellerZone.includes(status)) {
-        // Allow admin to also do seller steps (fallback if seller hasn't acted)
-      } else if (expectedNext && expectedNext !== status) {
+      const sellerZone   = ['placed', 'confirmed', 'packed']
+      if (!sellerZone.includes(order.status) && expectedNext && expectedNext !== status) {
         return res.status(400).json({
           message: `Cannot jump from "${order.status}" to "${status}". Expected next: "${expectedNext}"`,
         })
@@ -481,14 +388,12 @@ export const updateOrderStatus = async (req, res) => {
     order.status = status
     order.statusHistory.push({ status, note: 'Updated by admin', updatedAt: new Date() })
 
-    // Auto mark COD as paid on delivery
     if (status === 'delivered' && order.paymentMethod === 'cod') {
       order.paymentStatus = 'paid'
     }
 
     await order.save()
     res.json({ message: 'Status updated', order })
-
   } catch (err) {
     res.status(500).json({ message: err.message })
   }

@@ -409,7 +409,50 @@ export const adminUpdateProductStatus = async (req, res) => {
   return successResponse(res, `Product ${status}`, { product })
 }
 
-// ─── DEBUG (remove in production) ────────────────────────────────────────────
+// ─── GET DYNAMIC FILTERS (public) ────────────────────────────────────────────
+// GET /api/products/filters?category=men
+// Returns only brands, subcategories, colors present in active DB products
+export const getProductFilters = async (req, res) => {
+  try {
+    const { category } = req.query
+    const baseFilter = { status: 'active' }
+
+    if (category) {
+      const cat = await Category.findOne({
+        name: { $regex: new RegExp(`^${category}$`, 'i') },
+        parent: null,
+      })
+      if (cat) baseFilter.category = cat._id
+    }
+
+    // FIX: use itemName (most specific level) for sidebar CATEGORIES filter
+    // itemName = "Analog Watches", "Bodycon Maxi Dress" — exactly what products have
+    const [brandList, colorDocs, itemNameIds] = await Promise.all([
+      Product.distinct('brand',    { ...baseFilter, brand:    { $nin: ['', null] } }),
+      Product.aggregate([
+        { $match: baseFilter },
+        { $unwind: { path: '$variants', preserveNullAndEmptyArrays: false } },
+        { $match: { 'variants.color': { $nin: ['', null] } } },
+        { $group:  { _id: '$variants.color' } },
+        { $sort:   { _id: 1 } },
+      ]),
+      Product.distinct('itemName', { ...baseFilter, itemName: { $ne: null } }),
+    ])
+
+    const itemNameDocs = await Category.find({ _id: { $in: itemNameIds } })
+      .select('name')
+      .lean()
+
+    return successResponse(res, 'Filters fetched', {
+      brands:     [...new Set(brandList.filter(Boolean))].sort(),
+      colors:     [...new Set(colorDocs.map(d => d._id).filter(Boolean))],
+      categories: [...new Set(itemNameDocs.map(c => c.name).filter(Boolean))].sort(),
+    })
+  } catch (err) {
+    return errorResponse(res, err.message || 'Failed to fetch filters', 500)
+  }
+}
+
 export const debugProducts = async (req, res) => {
   const populated = await Product.find({ status: 'active' })
     .populate('itemName',    'name')

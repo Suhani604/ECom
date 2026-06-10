@@ -19,9 +19,9 @@ const STATES = [
   'Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh',
 ]
 
-// ─── Shipping calculator (mirrors shippingHelper.js logic on frontend) ─────────
+// ─── Shipping calculator ───────────────────────────────────────────────────────
 const FREE_SHIPPING_ABOVE = 499
-const COD_FEE             = 25   // flat COD handling fee
+const COD_FEE             = 25
 const WEIGHT_SLABS = [
   { maxG: 500,   mid: 47  },
   { maxG: 1000,  mid: 70  },
@@ -39,7 +39,7 @@ function calcShippingFee(totalWeightG, subtotal) {
   return slab.mid
 }
 
-// ─── Load Google Maps ─────────────────────────────────────────────────────────
+// ─── Load Google Maps ──────────────────────────────────────────────────────────
 let googleMapsLoaded  = false
 let googleMapsLoading = false
 const googleMapsCallbacks = []
@@ -124,14 +124,23 @@ function PlacesInput({ value, onChange, onSelect, placeholder, style, error }) {
   )
 }
 
-// ─── Checkout Progress Tracker ────────────────────────────────────────────────
-function CheckoutStepper({ selectedAddr, payMethod }) {
+// ─── Checkout Progress Tracker ─────────────────────────────────────────────────
+// FIX: The line between Address→Payment now fills as soon as an address is selected.
+// The line between Payment→Order Summary fills when both address AND payment are set.
+function CheckoutStepper({ selectedAddr, payMethod, orderPlaced }) {
   const steps = [
     { label: 'Address',       emoji: '📍', done: !!selectedAddr },
-    { label: 'Payment',       emoji: '💳', done: !!payMethod    },
+    { label: 'Payment',       emoji: '💳', done: orderPlaced    },
     { label: 'Order Summary', emoji: '🛒', done: false          },
   ]
+
+  // activeIdx = how many steps are fully completed
   const activeIdx = steps.reduce((acc, s, i) => (s.done ? i + 1 : acc), 0)
+
+  // connector i is "filled" when the step on its LEFT side is done
+  // i.e. connector 0 (Address→Payment) fills when Address is done (selectedAddr set)
+  //      connector 1 (Payment→Order) fills when Payment is done too
+  const connectorFilled = (i) => i < activeIdx
 
   return (
     <div style={{
@@ -170,11 +179,15 @@ function CheckoutStepper({ selectedAddr, payMethod }) {
                 {step.label}
               </span>
             </div>
+
+            {/* Connector line — fills based on whether the LEFT step is done */}
             {i < steps.length - 1 && (
               <div style={{
                 flex: 1, height: '3px', marginBottom: '22px',
                 marginLeft: '6px', marginRight: '6px', borderRadius: '2px',
-                background: i < activeIdx ? 'linear-gradient(90deg,#ec4899,#f97316)' : '#E2E8F0',
+                background: connectorFilled(i)
+                  ? 'linear-gradient(90deg,#ec4899,#f97316)'
+                  : '#E2E8F0',
                 transition: 'background 0.4s ease',
               }} />
             )}
@@ -185,7 +198,7 @@ function CheckoutStepper({ selectedAddr, payMethod }) {
   )
 }
 
-// ─── Main Checkout Page ───────────────────────────────────────────────────────
+// ─── Main Checkout Page ────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -200,14 +213,9 @@ export default function CheckoutPage() {
 
   const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm()
 
-  // ── Calculate all charges dynamically ─────────────────────────────────────
-  const subtotal = totalAmount()
-
-  const totalWeightG = items.reduce((acc, item) => {
-    const w = item.shippingWeight || 500
-    return acc + w * item.quantity
-  }, 0)
-
+  // ── Charges ────────────────────────────────────────────────────────────────
+  const subtotal       = totalAmount()
+  const totalWeightG   = items.reduce((acc, item) => acc + (item.shippingWeight || 500) * item.quantity, 0)
   const mrpTotal       = items.reduce((s, i) => s + i.mrp * i.quantity, 0)
   const discount       = mrpTotal - subtotal
   const isFreeShipping = subtotal >= FREE_SHIPPING_ABOVE
@@ -222,9 +230,9 @@ export default function CheckoutPage() {
   }, [items])
 
   useEffect(() => {
-  if (!user) return
-  getAddressesAPI()
-    .then(({ data }) => {
+    if (!user) return
+    getAddressesAPI()
+      .then(({ data }) => {
         setAddresses(data.addresses || [])
         const def = data.addresses?.find(a => a.isDefault) || data.addresses?.[0]
         if (def) setSelectedAddr(def)
@@ -232,6 +240,77 @@ export default function CheckoutPage() {
       .catch(() => {})
       .finally(() => setAddrLoad(false))
   }, [])
+
+  // ── AUTO-FILL: when "Add New" form opens, pre-fill name & phone from user profile ──
+  const openAddForm = () => {
+  setShowForm(true)
+  setTimeout(async () => {
+    // 1. name & phone from user profile
+    if (user?.name)  setValue('name',  user.name)
+    if (user?.phone) setValue('phone', user.phone)
+
+    // 2. ProductDetailPage pe detect hui location se fill karo
+    let geoFilled = false
+    try {
+      const saved = localStorage.getItem('vg_geo')
+      if (saved) {
+        const geo = JSON.parse(saved)
+        const parts = [geo.road, geo.suburb, geo.village].filter(Boolean)
+        const line1 = [...new Set(parts)].join(', ')
+        if (line1)    setValue('line1',   line1)
+        if (geo.city) setValue('city',    geo.city)
+        if (geo.pin && /^\d{6}$/.test(geo.pin)) setValue('pincode', geo.pin)
+        if (geo.state) {
+          const match = STATES.find(s => s.toLowerCase() === geo.state.toLowerCase())
+          if (match) setValue('state', match)
+        }
+        toast.success('📍 Location auto-filled!', { duration: 2000 })
+        geoFilled = true
+      }
+    } catch {}
+
+    // 3. Fallback — existing selected address se fill karo
+    if (!geoFilled && selectedAddr) {
+      if (selectedAddr.city)    setValue('city',    selectedAddr.city)
+      if (selectedAddr.state)   setValue('state',   selectedAddr.state)
+      if (selectedAddr.pincode) setValue('pincode', selectedAddr.pincode)
+    }
+
+    // 4. Live GPS fallback (agar localStorage mein kuch nahi)
+    if (!geoFilled && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const { latitude, longitude } = pos.coords
+            const res  = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+              { headers: { 'Accept-Language': 'en' } }
+            )
+            const data = await res.json()
+            const addr = data.address || {}
+            const road    = addr.road || addr.pedestrian || addr.footway || ''
+            const suburb  = addr.suburb || addr.neighbourhood || addr.quarter || ''
+            const village = addr.village || addr.town || ''
+            const city    = addr.city || addr.town || addr.village || addr.county || ''
+            const state   = addr.state || ''
+            const pin     = addr.postcode?.replace(/\s/g, '').slice(0, 6) || ''
+            const line1   = [...new Set([road, suburb, village].filter(Boolean))].join(', ')
+            if (line1) setValue('line1',   line1)
+            if (city)  setValue('city',    city)
+            if (pin && /^\d{6}$/.test(pin)) setValue('pincode', pin)
+            if (state) {
+              const match = STATES.find(s => s.toLowerCase() === state.toLowerCase())
+              if (match) setValue('state', match)
+            }
+            toast.success('📍 Location auto-filled!', { duration: 2000 })
+          } catch {}
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      )
+    }
+  }, 50)
+}
 
   const handlePlaceSelect = useCallback((parsed) => {
     if (parsed.line1)   setValue('line1',   parsed.line1)
@@ -262,23 +341,20 @@ export default function CheckoutPage() {
 
   const loadRazorpay = () => new Promise((resolve) => {
     if (window.Razorpay) { resolve(true); return }
-    const script  = document.createElement('script')
-    script.src    = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async  = true
-    script.onload = () => resolve(true)
-    script.onerror= () => resolve(false)
+    const script   = document.createElement('script')
+    script.src     = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async   = true
+    script.onload  = () => resolve(true)
+    script.onerror = () => resolve(false)
     document.head.appendChild(script)
     setTimeout(() => resolve(false), 10000)
   })
 
-    const placeOrder = async () => {
-    if (!user) {
-      navigate('/login?redirect=/checkout')
-      return
-    }
+  const placeOrder = async () => {
+    if (!user) { navigate('/login?redirect=/checkout'); return }
     if (!selectedAddr) return toast.error('Select a delivery address')
-    setLoading(true)  
-      try {
+    setLoading(true)
+    try {
       if (payMethod === 'razorpay') {
         const loaded = await loadRazorpay()
         if (!loaded) { toast.error('Razorpay failed to load. Check internet.'); setLoading(false); return }
@@ -358,74 +434,58 @@ export default function CheckoutPage() {
     }
   }
 
-  // ── Styles ────────────────────────────────────────────────────────────────
-  const inp = {
-    width: '100%', padding: '10px 14px', border: '1.5px solid #E2E8F0',
-    borderRadius: '10px', fontSize: '13px', outline: 'none',
-    fontFamily: f, boxSizing: 'border-box',
-  }
-  const card  = { background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }
-  const label = { display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px' }
-
+  // ── Styles ─────────────────────────────────────────────────────────────────
+  const inp   = { width:'100%', padding:'10px 14px', border:'1.5px solid #E2E8F0', borderRadius:'10px', fontSize:'13px', outline:'none', fontFamily:f, boxSizing:'border-box' }
+  const card  = { background:'white', borderRadius:'16px', padding:'20px', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }
+  const label = { display:'block', fontSize:'12px', fontWeight:'700', color:'#374151', marginBottom:'5px' }
   const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: f }}>
+    <div style={{ minHeight:'100vh', background:'#F8FAFC', fontFamily:f }}>
 
       {/* Header */}
-      <div style={{ background: 'white', padding: '0 20px', height: '60px', display: 'flex', alignItems: 'center', gap: '14px', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        <button onClick={() => navigate('/cart')} style={{ background: '#F1F5F9', border: 'none', width: '36px', height: '36px', borderRadius: '8px', cursor: 'pointer', fontSize: '18px' }}>←</button>
-        <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Checkout</h1>
+      <div style={{ background:'white', padding:'0 20px', height:'60px', display:'flex', alignItems:'center', gap:'14px', borderBottom:'1px solid #E2E8F0', position:'sticky', top:0, zIndex:10, boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
+        <button onClick={() => navigate('/cart')} style={{ background:'#F1F5F9', border:'none', width:'36px', height:'36px', borderRadius:'8px', cursor:'pointer', fontSize:'18px' }}>←</button>
+        <h1 style={{ fontSize:'18px', fontWeight:'800', color:'#0F172A', margin:0 }}>Checkout</h1>
       </div>
 
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      
-        {/* ── Login Banner for guests ─────────────────────────────── */}
+      <div style={{ maxWidth:'680px', margin:'0 auto', padding:'20px 16px', display:'flex', flexDirection:'column', gap:'16px' }}>
+
+        {/* ── Login Banner ─────────────────────────────────────────────── */}
         {!user && (
-          <div style={{
-            background: 'linear-gradient(135deg, #FFF0F9, #F5F0FF)',
-            border: '1.5px solid #ec4899',
-            borderRadius: '14px',
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '28px' }}>🔐</span>
+          <div style={{ background:'linear-gradient(135deg,#FFF0F9,#F5F0FF)', border:'1.5px solid #ec4899', borderRadius:'14px', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+              <span style={{ fontSize:'28px' }}>🔐</span>
               <div>
-                <p style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', margin: '0 0 2px' }}>
-                  Login or Signup to place your order
-                </p>
-                <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
-                  You'll need to login when you click "Place Order"
-                </p>
+                <p style={{ fontSize:'14px', fontWeight:'800', color:'#0F172A', margin:'0 0 2px' }}>Login or Signup to place your order</p>
+                <p style={{ fontSize:'12px', color:'#64748B', margin:0 }}>You'll need to login when you click "Place Order"</p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
               <button onClick={() => navigate('/login?redirect=/checkout')}
-                style={{ padding: '8px 16px', background: 'white', color: '#ec4899', border: '2px solid #ec4899', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: f }}>
+                style={{ padding:'8px 16px', background:'white', color:'#ec4899', border:'2px solid #ec4899', borderRadius:'8px', cursor:'pointer', fontWeight:'700', fontSize:'12px', fontFamily:f }}>
                 Login
               </button>
               <button onClick={() => navigate('/signup/buyer?redirect=/checkout')}
-                style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#ec4899,#f97316)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: f }}>
+                style={{ padding:'8px 16px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'700', fontSize:'12px', fontFamily:f }}>
                 Sign Up
               </button>
             </div>
           </div>
         )}
-        {/* ── Progress Stepper ─────────────────────────────────────────────── */}
-        <CheckoutStepper selectedAddr={selectedAddr} payMethod={payMethod} />
 
-        {/* ── Address ──────────────────────────────────────────────────────── */}
+        {/* ── Progress Stepper ─────────────────────────────────────────── */}
+       <CheckoutStepper selectedAddr={selectedAddr} payMethod={payMethod} orderPlaced={orderPlacedRef.current} />
+
+        {/* ── Address ──────────────────────────────────────────────────── */}
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
               <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>📍</div>
               <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>Delivery Address</h2>
             </div>
-            <button onClick={() => setShowForm(!showForm)}
+            {/* CHANGED: onClick now calls openAddForm() instead of setShowForm(!showForm) */}
+            <button onClick={() => showForm ? (setShowForm(false), reset()) : openAddForm()}
               style={{ padding:'8px 16px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'12px', fontWeight:'700', fontFamily:f }}>
               + Add New
             </button>
@@ -433,6 +493,7 @@ export default function CheckoutPage() {
 
           {showForm && (
             <form onSubmit={handleSubmit(saveAddress)} style={{ background:'#F8FAFC', borderRadius:'12px', padding:'18px', marginBottom:'16px', border:'1px solid #E2E8F0' }}>
+
               {GOOGLE_KEY && (
                 <div style={{ marginBottom:'16px' }}>
                   <label style={label}>🔍 Search with Google Maps</label>
@@ -440,6 +501,7 @@ export default function CheckoutPage() {
                   <p style={{ fontSize:'11px', color:'#94A3B8', margin:'5px 0 0' }}>Select from suggestions to auto-fill ↓</p>
                 </div>
               )}
+
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'12px' }}>
                 <div>
                   <label style={label}>Full Name *</label>
@@ -502,7 +564,7 @@ export default function CheckoutPage() {
             <div style={{ textAlign:'center', padding:'28px', color:'#94A3B8' }}>
               <div style={{ fontSize:'36px', marginBottom:'10px' }}>📍</div>
               <p style={{ margin:'0 0 12px', fontSize:'14px' }}>No addresses saved yet</p>
-              <button onClick={() => setShowForm(true)}
+              <button onClick={openAddForm}
                 style={{ padding:'10px 20px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'10px', cursor:'pointer', fontWeight:'700', fontFamily:f, fontSize:'13px' }}>
                 Add First Address
               </button>
@@ -528,7 +590,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* ── Payment Method ────────────────────────────────────────────────── */}
+        {/* ── Payment Method ────────────────────────────────────────────── */}
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
             <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>💳</div>
@@ -554,14 +616,12 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* ── Order Summary ─────────────────────────────────────────────────── */}
+        {/* ── Order Summary ─────────────────────────────────────────────── */}
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
             <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>🛒</div>
             <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>Order Summary</h2>
           </div>
-
-          {/* Items */}
           <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'16px' }}>
             {items.map((item, i) => (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px' }}>
@@ -575,89 +635,59 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          {/* ── Myntra-style Price Details ──────────────────────────── */}
-          <div style={{
-            marginTop: '4px',
-            background: '#F8FAFC',
-            border: '1px solid #E2E8F0',
-            borderRadius: '12px',
-            overflow: 'hidden',
-          }}>
-            {/* Header */}
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', background: '#F1F5F9' }}>
-              <span style={{ fontSize: '12px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div style={{ marginTop:'4px', background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:'12px', overflow:'hidden' }}>
+            <div style={{ padding:'12px 16px', borderBottom:'1px solid #E2E8F0', background:'#F1F5F9' }}>
+              <span style={{ fontSize:'12px', fontWeight:'800', color:'#374151', textTransform:'uppercase', letterSpacing:'0.06em' }}>
                 Price Details ({items.reduce((s, i) => s + i.quantity, 0)} Item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''})
               </span>
             </div>
-
-            <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-              {/* Total MRP */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                <span style={{ color: '#64748B' }}>Total MRP</span>
-                <span style={{ color: '#374151' }}>₹{mrpTotal.toLocaleString('en-IN')}</span>
+            <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:'12px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px' }}>
+                <span style={{ color:'#64748B' }}>Total MRP</span>
+                <span style={{ color:'#374151' }}>₹{mrpTotal.toLocaleString('en-IN')}</span>
               </div>
-
-              {/* Discount on MRP */}
               {discount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                  <span style={{ color: '#64748B' }}>Discount on MRP</span>
-                  <span style={{ color: '#16A34A', fontWeight: '700' }}>− ₹{discount.toLocaleString('en-IN')}</span>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px' }}>
+                  <span style={{ color:'#64748B' }}>Discount on MRP</span>
+                  <span style={{ color:'#16A34A', fontWeight:'700' }}>− ₹{discount.toLocaleString('en-IN')}</span>
                 </div>
               )}
-
-              {/* Shipping Fee */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                <span style={{ color: '#64748B' }}>Shipping Fee</span>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px' }}>
+                <span style={{ color:'#64748B' }}>Shipping Fee</span>
                 {shippingFee === 0
-                  ? <span style={{ color: '#16A34A', fontWeight: '700' }}>FREE</span>
-                  : <span style={{ color: '#374151' }}>₹{shippingFee}</span>
+                  ? <span style={{ color:'#16A34A', fontWeight:'700' }}>FREE</span>
+                  : <span style={{ color:'#374151' }}>₹{shippingFee}</span>
                 }
               </div>
-
-              {/* COD Handling Fee */}
               {payMethod === 'cod' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                  <span style={{ color: '#64748B' }}>COD Handling Fee</span>
-                  <span style={{ color: '#374151' }}>₹{COD_FEE}</span>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px' }}>
+                  <span style={{ color:'#64748B' }}>COD Handling Fee</span>
+                  <span style={{ color:'#374151' }}>₹{COD_FEE}</span>
                 </div>
               )}
-
-              {/* Free shipping banner */}
               {isFreeShipping && (
-                <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '14px' }}>🎉</span>
-                  <span style={{ fontSize: '12px', color: '#16A34A', fontWeight: '600' }}>
-                    You saved ₹{calcShippingFee(totalWeightG, 0)} on shipping!
-                  </span>
+                <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:'8px', padding:'8px 12px', display:'flex', alignItems:'center', gap:'6px' }}>
+                  <span style={{ fontSize:'14px' }}>🎉</span>
+                  <span style={{ fontSize:'12px', color:'#16A34A', fontWeight:'600' }}>You saved ₹{calcShippingFee(totalWeightG, 0)} on shipping!</span>
                 </div>
               )}
-
-              {/* Divider */}
-              <div style={{ height: '1px', background: '#E2E8F0' }} />
-
-              {/* Total Amount */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>Total Amount</span>
-                <span style={{ fontSize: '20px', fontWeight: '900', color: '#ec4899' }}>
-                  ₹{grandTotal.toLocaleString('en-IN')}
-                </span>
+              <div style={{ height:'1px', background:'#E2E8F0' }} />
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:'15px', fontWeight:'800', color:'#0F172A' }}>Total Amount</span>
+                <span style={{ fontSize:'20px', fontWeight:'900', color:'#ec4899' }}>₹{grandTotal.toLocaleString('en-IN')}</span>
               </div>
-
-              {/* Savings pill */}
               {discount > 0 && (
-                <div style={{ background: '#FFF0F9', border: '1px solid #fbcfe8', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <span style={{ fontSize: '13px', color: '#ec4899', fontWeight: '700' }}>
+                <div style={{ background:'#FFF0F9', border:'1px solid #fbcfe8', borderRadius:'8px', padding:'10px 14px', textAlign:'center' }}>
+                  <span style={{ fontSize:'13px', color:'#ec4899', fontWeight:'700' }}>
                     🛍️ You will save ₹{(discount + (isFreeShipping ? calcShippingFee(totalWeightG, 0) : 0)).toLocaleString('en-IN')} on this order
                   </span>
                 </div>
               )}
-
             </div>
           </div>
         </div>
 
-        {/* ── Place Order Button ─────────────────────────────────────────────── */}
+        {/* ── Place Order Button ─────────────────────────────────────────── */}
         <button
           onClick={placeOrder}
           disabled={loading || !selectedAddr}
@@ -678,7 +708,7 @@ export default function CheckoutPage() {
         </button>
 
         <p style={{ textAlign:'center', fontSize:'12px', color:'#94A3B8', paddingBottom:'20px' }}>
-          🔒 Secure & encrypted payments powered by Razorpay
+          🔒 Secure &amp; encrypted payments powered by Razorpay
         </p>
       </div>
     </div>
