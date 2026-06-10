@@ -22,14 +22,13 @@ export default function BuyerSignupPage() {
   const handleSignup = async (e) => {
     e.preventDefault()
     if (!form.name || !form.email || !form.phone || !form.password) return toast.error('All fields are required')
-    if (form.password !== form.confirmPassword) return toast.error('Passwords do not match')
     if (form.password.length < 6) return toast.error('Password must be at least 6 characters')
     if (!/^[6-9]\d{9}$/.test(form.phone)) return toast.error('Enter valid 10-digit mobile number')
     setLoading(true)
     try {
       const { data } = await api.post('/auth/signup/buyer', { name: form.name, email: form.email, phone: form.phone, password: form.password })
       setUserId(data.userId); setEmail(form.email); setStep(2)
-      toast.success('OTP sent! Use 123456 in dev mode.')
+      toast.success('OTP sent to your mobile number! 📱')
     } catch (err) { toast.error(err.response?.data?.message || 'Signup failed') }
     finally { setLoading(false) }
   }
@@ -200,16 +199,6 @@ export default function BuyerSignupPage() {
                     </button>
                   </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Confirm Password</label>
-                  <input type="password" value={form.confirmPassword}
-                    onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
-                    onFocus={() => setFocused('cpw')} onBlur={() => setFocused('')}
-                    placeholder="Repeat password" style={inp('cpw')} />
-                  {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p style={{ fontSize: '11px', color: '#DC2626', margin: '4px 0 0', fontWeight: '500' }}>⚠ Passwords don't match</p>
-                  )}
-                </div>
 
                 <button type="submit" disabled={loading} className="submit-btn"
                   style={{ width: '100%', padding: '13px', background: loading ? '#F3E8F0' : 'linear-gradient(135deg,#E91E8C 0%,#9333EA 100%)', color: loading ? '#C084A0' : 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: f, boxShadow: loading ? 'none' : '0 6px 20px rgba(233,30,140,0.3)', transition: 'all 0.2s', marginTop: '2px' }}>
@@ -223,7 +212,6 @@ export default function BuyerSignupPage() {
                 <div style={{ fontSize: '32px', marginBottom: '6px' }}>📧</div>
                 <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 3px', fontWeight: '500' }}>We sent a 6-digit code to</p>
                 <p style={{ fontSize: '14px', fontWeight: '700', color: '#E91E8C', margin: '0 0 6px' }}>{email}</p>
-                <span style={{ fontSize: '11px', color: '#94A3B8', background: 'white', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>Dev mode: use 123456</span>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '14px' }}>

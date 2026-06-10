@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import useAuthStore from '../../context/useAuthStore.js'
+import useCartStore from '../../context/useCartStore.js'
 import api from '../../api/axiosInstance.js'
 import toast from 'react-hot-toast'
 
@@ -9,6 +10,7 @@ const f = '"DM Sans", Poppins, sans-serif'
 export default function LoginPage() {
  const navigate   = useNavigate()
 const storeLogin = useAuthStore((s) => s.login)
+const reloadCart = useCartStore((s) => s.reloadCart)
 const [searchParams] = useSearchParams()
 const redirectTo = searchParams.get('redirect')
   const [form,    setForm]    = useState({ emailOrPhone: '', password: '' })
@@ -34,7 +36,8 @@ const redirectTo = searchParams.get('redirect')
         return
       }
       storeLogin(data.user, data.token)
-      toast.success(`Welcome back, ${data.user.name}! 👋`)
+reloadCart()
+toast.success(`Welcome back, ${data.user.name}! 👋`)
      if (redirectTo && data.user.role === 'buyer') {
   navigate(redirectTo, { replace: true })
 } else {

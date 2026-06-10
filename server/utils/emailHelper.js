@@ -95,3 +95,51 @@ export const sendOutForDeliveryEmail = async (toEmail, name, orderId, trackingUr
     html,
   })
 }
+export const sendOrderPlacedEmail = async (toEmail, name, orderId, items, totalAmount) => {
+  const transporter = createTransporter()
+  if (!transporter) {
+    console.log(`\n🛍️ Order ${orderId} placed for ${toEmail}\n`)
+    return
+  }
+
+  const itemsList = items.map(i => 
+    `<tr>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9">${i.title}</td>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:center">${i.size} · Qty:${i.quantity}</td>
+      <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right">₹${i.sellingPrice * i.quantity}</td>
+    </tr>`
+  ).join('')
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#fff;border-radius:12px;border:1px solid #e8e6e0">
+      <h2 style="color:#ec4899;margin:0 0 8px">StyleHub</h2>
+      <p style="color:#444;font-size:14px">Hi ${name},</p>
+      <div style="background:#f0fdf4;border-radius:10px;padding:20px;margin:0 0 20px;text-align:center">
+        <div style="font-size:40px">🎉</div>
+        <h3 style="color:#15803d;margin:8px 0">Order Placed Successfully!</h3>
+        <p style="color:#666;font-size:13px;margin:0">Order ID: <strong>#${orderId.toString().slice(-8).toUpperCase()}</strong></p>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="padding:8px;text-align:left;font-size:12px;color:#64748b">ITEM</th>
+            <th style="padding:8px;text-align:center;font-size:12px;color:#64748b">DETAILS</th>
+            <th style="padding:8px;text-align:right;font-size:12px;color:#64748b">PRICE</th>
+          </tr>
+        </thead>
+        <tbody>${itemsList}</tbody>
+      </table>
+      <div style="background:#fdf2f8;border-radius:8px;padding:14px;text-align:right">
+        <span style="font-size:16px;font-weight:700;color:#ec4899">Total: ₹${totalAmount}</span>
+      </div>
+      <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center">Thank you for shopping with StyleHub! 🛍️</p>
+    </div>
+  `
+
+  await transporter.sendMail({
+    from:    `"StyleHub" <${process.env.EMAIL_USER}>`,
+    to:      toEmail,
+    subject: `✅ Order Confirmed — #${orderId.toString().slice(-8).toUpperCase()}`,
+    html,
+  })
+}

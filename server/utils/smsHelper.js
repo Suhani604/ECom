@@ -7,7 +7,7 @@ export const sendOTPSMS = async (phone, otp) => {
       {
         variables_values: otp,
         route: 'otp',
-        numbers: phone,
+       numbers: phone.toString().replace(/^\+91/, '').replace(/^91/, '').slice(-10),
       },
       {
         headers: {
@@ -16,8 +16,8 @@ export const sendOTPSMS = async (phone, otp) => {
       }
     )
     return true
-  } catch (err) {
-    console.error('SMS error:', err.message)
+ } catch (err) {
+    console.error('SMS error:', err.response?.data || err.message)
     return false
   }
 }

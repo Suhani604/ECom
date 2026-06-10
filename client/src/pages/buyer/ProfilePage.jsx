@@ -41,7 +41,7 @@ export default function ProfilePage() {
   const cartCount     = cartItems.reduce((s, i) => s + i.quantity, 0)
   const wishlistCount = wishlistItems.length
 
-  const handleLogout = () => { logout(); navigate('/') }
+ const handleLogout = () => { logout(user?._id); navigate('/') }
 
   const initials = (user?.name || user?.fullName || 'U')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)

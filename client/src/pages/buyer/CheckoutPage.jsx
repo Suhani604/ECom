@@ -494,14 +494,6 @@ export default function CheckoutPage() {
           {showForm && (
             <form onSubmit={handleSubmit(saveAddress)} style={{ background:'#F8FAFC', borderRadius:'12px', padding:'18px', marginBottom:'16px', border:'1px solid #E2E8F0' }}>
 
-              {GOOGLE_KEY && (
-                <div style={{ marginBottom:'16px' }}>
-                  <label style={label}>🔍 Search with Google Maps</label>
-                  <PlacesInput placeholder="Start typing your address..." onChange={() => {}} onSelect={handlePlaceSelect} style={{ ...inp, paddingRight:'34px' }} />
-                  <p style={{ fontSize:'11px', color:'#94A3B8', margin:'5px 0 0' }}>Select from suggestions to auto-fill ↓</p>
-                </div>
-              )}
-
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'12px' }}>
                 <div>
                   <label style={label}>Full Name *</label>

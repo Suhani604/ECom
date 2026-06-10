@@ -84,12 +84,32 @@ export const acceptOrder = async (req, res) => {
 // ── Mark Picked Up ────────────────────────────────────────────────────────────
 export const markPickedUp = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('items.seller')
+    const order = await Order.findById(req.params.id)
+      .populate('items.seller')
+      .populate('buyer', 'name phone')  // ✅ buyer populate karo SMS ke liye
     if (!order) return res.status(404).json({ message: 'Order not found' })
+
+    // ✅ FIX: Pickup ke time OTP generate karo aur DB mein save karo
+    const deliveryOTP = Math.floor(1000 + Math.random() * 9000).toString()
+    order.deliveryOTP = deliveryOTP
+
     order.status = 'out_for_delivery'
     order.pickedUpAt = new Date()
     order.statusHistory.push({ status: 'out_for_delivery', note: 'Picked up by delivery partner' })
     await order.save()
+
+    // Terminal mein OTP print karo (testing ke liye)
+    console.log(`🔑 Delivery OTP for order ${order._id}: ${deliveryOTP}`)
+
+    // Customer ko SMS bhejo (non-blocking)
+    if (order.buyer?.phone) {
+      try {
+        await sendOTPSMS(order.buyer.phone, deliveryOTP)
+        console.log(`✅ OTP SMS sent to ${order.buyer.phone}`)
+      } catch (smsErr) {
+        console.error(`❌ SMS failed (non-blocking): ${smsErr.message}`)
+      }
+    }
 
     // Real-time emit
     const io = req.app.get('io')
@@ -167,7 +187,7 @@ export const getProfile = async (req, res) => {
   }
 }
 
-// ── Get Earnings ───
+// ── Get Earnings ───────────────────────────────────────────────────────────────
 export const getEarnings = async (req, res) => {
   try {
     const today = new Date()
@@ -204,18 +224,17 @@ export const resendOTP = async (req, res) => {
     order.deliveryOTP = newOTP
     await order.save()
 
-    // SMS send karo customer ko
-    // Always print OTP in terminal
-console.log(`🔑 Delivery OTP for order ${order._id}: ${newOTP}`)
+    // Terminal mein OTP print karo
+    console.log(`🔑 Delivery OTP for order ${order._id}: ${newOTP}`)
 
-if (order.buyer?.phone) {
-  try {
-    await sendOTPSMS(order.buyer.phone, newOTP)
-    console.log(`✅ SMS sent to ${order.buyer.phone}`)
-  } catch (smsErr) {
-    console.log(`❌ SMS failed: ${smsErr.message}`)
-  }
-}
+    if (order.buyer?.phone) {
+      try {
+        await sendOTPSMS(order.buyer.phone, newOTP)
+        console.log(`✅ SMS sent to ${order.buyer.phone}`)
+      } catch (smsErr) {
+        console.log(`❌ SMS failed: ${smsErr.message}`)
+      }
+    }
 
     res.json({ message: 'OTP sent to customer via SMS!' })
   } catch (err) {

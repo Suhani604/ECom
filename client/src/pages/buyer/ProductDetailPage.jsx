@@ -544,7 +544,6 @@ function ReviewsSection({ productId, productTitle }) {
           <h3 style={{fontSize:'13px',fontWeight:'800',color:'#0F172A',margin:0,textTransform:'uppercase',letterSpacing:'0.06em'}}>⭐ Ratings & Reviews</h3>
           <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
             {total > 0 && <span style={{fontSize:'12px',color:'#94A3B8',fontWeight:'600'}}>{total} review{total!==1?'s':''}</span>}
-            {/* ── Write Review button — any logged-in buyer can rate ── */}
             <button onClick={handleWriteReview}
               style={{
                 padding:'6px 14px', fontSize:'12px', fontWeight:'700', cursor:'pointer', fontFamily:f,
@@ -671,13 +670,16 @@ export default function ProductDetailPage() {
   const [qty,      setQty]      = useState(1)
   const [zoom,     setZoom]     = useState(false)
   const [mousePos, setMousePos] = useState({x:50,y:50})
+  // ✅ NEW: size validation shake animation state
+  const [sizeError, setSizeError] = useState(false)
 
   useEffect(()=>{
     api.get(`/products/${id}`)
       .then(({data})=>{
         setProduct(data.product)
-        const first=data.product.variants?.find(v=>v.stock>0)
-        if(first){setSelSize(first.size);setSelColor(first.color||'')}
+        // ✅ Auto-select removed — user must manually pick a size
+
+
       })
       .catch(()=>toast.error('Product not found'))
       .finally(()=>setLoading(false))
@@ -706,19 +708,39 @@ export default function ProductDetailPage() {
   const colors=[...new Set(product.variants?.filter(v=>v.size===selSize).map(v=>v.color).filter(Boolean)||[])]
   const selVariant=product.variants?.find(v=>v.size===selSize&&(v.color===selColor||!selColor))
   const inStock=selVariant?selVariant.stock>0:false
+  // hasStock = product mein koi bhi variant available hai (buttons enable karne ke liye)
+  const hasStock = product.variants?.some(v => v.stock > 0) ?? false
   const discount=product.mrp>product.sellingPrice?Math.round(((product.mrp-product.sellingPrice)/product.mrp)*100):0
   const inCart=items.some(i=>i.productId===product._id&&i.size===selSize)
 
+  // ✅ FIXED: common size validation helper with shake effect
+  const validateSize = () => {
+    if (!selSize) {
+      toast.error('Please select a size first! 👆')
+      setSizeError(true)
+      setTimeout(() => setSizeError(false), 600)
+      return false
+    }
+    return true
+  }
+
   const handleAddToCart=()=>{
-    if(!selSize) return toast.error('Please select a size')
+    if (!validateSize()) return   // ✅ size check
     if(!inStock) return toast.error('Out of stock')
     addItem({productId:product._id,variantId:selVariant?._id,title:product.title,image:product.images?.[0]||'',size:selSize,color:selColor,price:product.sellingPrice,mrp:product.mrp,seller:product.seller?._id,gstPercent:product.gstPercent,quantity:qty})
     toast.success('Added to cart! 🛒')
   }
 
+  // ✅ FIXED: Buy Now — validates size, then adds to cart, then navigates
+  const handleBuyNow = () => {
+    if (!validateSize()) return
+    if (!inStock) return toast.error('Out of stock')
+    addItem({productId:product._id,variantId:selVariant?._id,title:product.title,image:product.images?.[0]||'',size:selSize,color:selColor,price:product.sellingPrice,mrp:product.mrp,seller:product.seller?._id,gstPercent:product.gstPercent,quantity:qty})
+    navigate('/checkout')
+  }
+
   const handleMouseMove=(e)=>{
   const rect=e.currentTarget.getBoundingClientRect()
-  // Clamp between 20%–80% so zoom never hits edges
   const x = Math.min(80, Math.max(20, ((e.clientX-rect.left)/rect.width)*100))
   const y = Math.min(80, Math.max(20, ((e.clientY-rect.top)/rect.height)*100))
   setMousePos({x, y})
@@ -730,9 +752,12 @@ export default function ProductDetailPage() {
     <div style={{minHeight:'100vh',background:'#F8FAFC',fontFamily:f}}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
         .thumb-btn{transition:all 0.15s ease} .thumb-btn:hover{border-color:#ec4899!important;transform:scale(1.04)}
         .size-btn{transition:all 0.15s ease} .size-btn:hover{border-color:#ec4899!important;background:#FFF0F9!important}
         .action-btn{transition:all 0.2s} .action-btn:hover:not(:disabled){transform:translateY(-1px)}
+        .size-shake{animation:shake 0.5s ease}
+        .size-error-highlight{border-color:#ef4444!important;background:#FFF1F2!important}
        @media(max-width:768px){
       .product-grid{grid-template-columns:1fr!important;padding:12px 12px 90px!important;}
       .product-sticky{position:static!important;flex-direction:column!important;}
@@ -747,7 +772,6 @@ export default function ProductDetailPage() {
         <button onClick={()=>navigate('/cart')} style={{position:'relative',background:'none',border:'none',cursor:'pointer',padding:'6px'}}>
           <span style={{fontSize:'22px'}}>🛒</span>
           {items.length>0&&<span style={{position:'absolute',top:0,right:0,width:'16px',height:'16px',background:'#ec4899',color:'white',fontSize:'9px',fontWeight:'800',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>{items.reduce((s,i)=>s+i.quantity,0)}</span>}
-          
         </button>
       </div>
 
@@ -793,12 +817,11 @@ export default function ProductDetailPage() {
         {/* RIGHT: details + reviews */}
         <div style={{display:'flex',flexDirection:'column'}}>
 
-          {/* Brand + title + rating — real-time from DB */}
+          {/* Brand + title + rating */}
           <div style={{marginBottom:'14px'}}>
             {product.brand&&<p style={{fontSize:'12px',color:'#94A3B8',fontWeight:'700',textTransform:'uppercase',letterSpacing:'0.1em',margin:'0 0 6px'}}>{product.brand}</p>}
             <h1 style={{fontSize:'20px',fontWeight:'800',color:'#0F172A',lineHeight:'1.4',margin:0}}>{product.title}</h1>
 
-            {/* ── Real-time rating badge (like Myntra) ── */}
             {product.reviewCount > 0 ? (
               <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px'}}>
                 <span style={{display:'inline-flex',alignItems:'center',gap:'5px',background:'#16a34a',padding:'4px 10px',borderRadius:'6px'}}>
@@ -826,16 +849,18 @@ export default function ProductDetailPage() {
             <p style={{fontSize:'12px',color:'#94A3B8',margin:0}}>Inclusive of all taxes · GST {product.gstPercent}%</p>
           </div>
 
-          {/* Sizes */}
+          {/* ✅ Sizes — with error highlight when not selected */}
           {sizes.length>0&&(
             <div style={{marginBottom:'20px'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
-                <span style={{fontSize:'13px',fontWeight:'700',color:'#0F172A',textTransform:'uppercase',letterSpacing:'0.06em'}}>Select Size</span>
+                <span style={{fontSize:'13px',fontWeight:'700',color: sizeError ? '#ef4444' : '#0F172A',textTransform:'uppercase',letterSpacing:'0.06em',transition:'color 0.2s'}}>
+                  {sizeError ? '⚠️ Please Select a Size' : 'Select Size'}
+                </span>
                 {selVariant&&<span style={{fontSize:'12px',color:selVariant.stock<5?'#DC2626':'#16A34A',fontWeight:'600'}}>{selVariant.stock} in stock</span>}
               </div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
+              <div className={sizeError ? 'size-shake' : ''} style={{display:'flex',flexWrap:'wrap',gap:'10px',padding:'8px',borderRadius:'8px',border: sizeError ? '1.5px solid #ef4444' : '1.5px solid transparent',background: sizeError ? '#FFF5F5' : 'transparent',transition:'all 0.2s'}}>
                 {sizes.map(size=>{const v=product.variants?.find(vv=>vv.size===size);const has=v?.stock>0;return(
-                  <button key={size} className="size-btn" onClick={()=>{if(has){setSelSize(size);setSelColor('')}}} disabled={!has}
+                  <button key={size} className="size-btn" onClick={()=>{if(has){setSelSize(size);setSelColor('');setSizeError(false)}}} disabled={!has}
                     style={{minWidth:'52px',padding:'8px 16px',borderRadius:'6px',border:`2px solid ${selSize===size?'#ec4899':'#E2E8F0'}`,background:selSize===size?'#FFF0F9':'white',color:selSize===size?'#ec4899':has?'#374151':'#CBD5E1',fontWeight:'700',fontSize:'13px',cursor:has?'pointer':'not-allowed',textDecoration:!has?'line-through':'none',fontFamily:f}}>{size}</button>
                 )})}
               </div>
@@ -863,14 +888,14 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* CTA Buttons */}
+          {/* ✅ CTA Buttons — both now properly validated */}
           <div style={{display:'flex',gap:'12px',marginBottom:'28px'}}>
-            <button onClick={handleAddToCart} disabled={!inStock} className="action-btn"
-              style={{flex:1,height:'48px',background:'white',color:inStock?'#ec4899':'#94A3B8',border:`2px solid ${inStock?'#ec4899':'#E2E8F0'}`,borderRadius:'8px',cursor:inStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
+            <button onClick={handleAddToCart} disabled={!hasStock} className="action-btn"
+              style={{flex:1,height:'48px',background:'white',color:hasStock?'#ec4899':'#94A3B8',border:`2px solid ${hasStock?'#ec4899':'#E2E8F0'}`,borderRadius:'8px',cursor:hasStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
               🛍️ {inCart?'Added to Bag':'Add to Bag'}
             </button>
-              <button onClick={()=>{handleAddToCart();if(inStock&&selSize)navigate('/checkout')}} disabled={!inStock} className="action-btn"
-              style={{flex:1,height:'48px',background:inStock?'linear-gradient(135deg,#ec4899,#f97316)':'#E2E8F0',color:inStock?'white':'#94A3B8',border:'none',borderRadius:'8px',cursor:inStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,boxShadow:inStock?'0 4px 14px rgba(236,72,153,0.35)':'none',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
+            <button onClick={handleBuyNow} disabled={!hasStock} className="action-btn"
+              style={{flex:1,height:'48px',background:hasStock?'linear-gradient(135deg,#ec4899,#f97316)':'#E2E8F0',color:hasStock?'white':'#94A3B8',border:'none',borderRadius:'8px',cursor:hasStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,boxShadow:hasStock?'0 4px 14px rgba(236,72,153,0.35)':'none',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
               🤩 Buy Now
             </button>
           </div>
@@ -918,7 +943,7 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Reviews — pass productTitle for the modal */}
+          {/* Reviews */}
           <ReviewsSection productId={id} productTitle={product.title} />
         </div>
       </div>

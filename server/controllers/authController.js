@@ -5,6 +5,7 @@ import {
   verifyRefreshToken, generateOTP, otpExpiry
 } from '../utils/jwtHelper.js'
 import { sendOTPEmail } from '../utils/emailHelper.js'
+import { sendOTPSMS } from '../utils/smsHelper.js'
 
 // ── helper ────────────────────────────────────────────────────────────────────
 const ok  = (res, msg, data = {}, code = 200) =>
@@ -17,13 +18,15 @@ const err = (res, msg, code = 400) =>
 // In production:  real random OTP sent via email
 const isDev = process.env.NODE_ENV !== 'production'
 const getOTP = () => isDev ? '123456' : generateOTP()
-const tryEmail = async (email, name, otp, type) => {
-  if (isDev) {
-    console.log(`\n🔑 DEV OTP for ${email}: ${otp}\n`)
-    return
-  }
-  try { await sendOTPEmail(email, name, otp, type) }
+
+const tryEmail = async (email, name, otp, type, phone = null) => {
+  console.log(`\n🔑 OTP for ${email}: ${otp}\n`)
+  try { await sendOTPEmail(email, name, otp, type) } 
   catch (e) { console.error('Email failed:', e.message) }
+  if (phone) {
+    try { await sendOTPSMS(phone, otp) }
+    catch (e) { console.error('SMS failed:', e.message) }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -50,7 +53,7 @@ export const buyerSignup = async (req, res) => {
     role: 'buyer', otp, otpExpiry: expiry, isVerified: false,
   })
 
-  await tryEmail(email, name, otp, 'verify')
+  await tryEmail(email, name, otp, 'verify', phone)
 
   return ok(res, isDev
     ? 'Account created! Use OTP: 123456'
@@ -83,8 +86,7 @@ export const sellerSignup = async (req, res) => {
     sellerDetails: { onboardingStep: 1, approvalStatus: 'pending' },
   })
 
-  await tryEmail(email, name, otp, 'verify')
-
+    await tryEmail(email, name, otp, 'verify', phone)
   return ok(res, isDev
     ? 'Seller account created! Use OTP: 123456'
     : 'Seller account created! Check email for OTP',
