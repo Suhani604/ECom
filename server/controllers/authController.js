@@ -7,21 +7,17 @@ import {
 import { sendOTPEmail } from '../utils/emailHelper.js'
 import { sendOTPSMS } from '../utils/smsHelper.js'
 
-// ── helper ────────────────────────────────────────────────────────────────────
 const ok  = (res, msg, data = {}, code = 200) =>
   res.status(code).json({ success: true,  message: msg, ...data })
 const err = (res, msg, code = 400) =>
   res.status(code).json({ success: false, message: msg })
 
-// ── DEV OTP helper ────────────────────────────────────────────────────────────
-// In development: OTP is always 123456 (no email needed)
-// In production:  real random OTP sent via email
 const isDev = process.env.NODE_ENV !== 'production'
 const getOTP = () => isDev ? '123456' : generateOTP()
 
 const tryEmail = async (email, name, otp, type, phone = null) => {
   console.log(`\n🔑 OTP for ${email}: ${otp}\n`)
-  try { await sendOTPEmail(email, name, otp, type) } 
+  try { await sendOTPEmail(email, name, otp, type) }
   catch (e) { console.error('Email failed:', e.message) }
   if (phone) {
     try { await sendOTPSMS(phone, otp) }
@@ -30,7 +26,7 @@ const tryEmail = async (email, name, otp, type, phone = null) => {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BUYER SIGNUP
+// BUYER SIGNUP — FIX: unverified user ko overwrite karo, block mat karo
 // ═══════════════════════════════════════════════════════════════════════════════
 export const buyerSignup = async (req, res) => {
   const { name, email, phone, password } = req.body
@@ -41,6 +37,23 @@ export const buyerSignup = async (req, res) => {
 
   const exists = await User.findOne({ $or: [{ email }, { phone }] })
   if (exists) {
+    // ✅ FIX: Agar user hai but verify nahi hua (incomplete signup) → re-signup allow karo
+    if (!exists.isVerified) {
+      const otp    = getOTP()
+      const expiry = otpExpiry()
+      exists.name      = name
+      exists.phone     = phone
+      exists.password  = password  // pre-save hook re-hash karega
+      exists.otp       = otp
+      exists.otpExpiry = expiry
+      await exists.save()
+      await tryEmail(email, name, otp, 'verify', phone)
+      return ok(res, isDev
+        ? 'Account created! Use OTP: 123456'
+        : 'Account created! Check email for OTP',
+      { userId: exists._id, email: exists.email }, 201)
+    }
+    // Verified user hai → block karo
     if (exists.email === email) return err(res, 'Email already registered', 409)
     return err(res, 'Phone number already registered', 409)
   }
@@ -62,7 +75,7 @@ export const buyerSignup = async (req, res) => {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SELLER SIGNUP
+// SELLER SIGNUP — same fix applied
 // ═══════════════════════════════════════════════════════════════════════════════
 export const sellerSignup = async (req, res) => {
   const { name, email, phone, password } = req.body
@@ -73,6 +86,21 @@ export const sellerSignup = async (req, res) => {
 
   const exists = await User.findOne({ $or: [{ email }, { phone }] })
   if (exists) {
+    if (!exists.isVerified) {
+      const otp    = getOTP()
+      const expiry = otpExpiry()
+      exists.name      = name
+      exists.phone     = phone
+      exists.password  = password
+      exists.otp       = otp
+      exists.otpExpiry = expiry
+      await exists.save()
+      await tryEmail(email, name, otp, 'verify', phone)
+      return ok(res, isDev
+        ? 'Seller account created! Use OTP: 123456'
+        : 'Seller account created! Check email for OTP',
+      { userId: exists._id, email: exists.email }, 201)
+    }
     if (exists.email === email) return err(res, 'Email already registered', 409)
     return err(res, 'Phone number already registered', 409)
   }
@@ -86,7 +114,7 @@ export const sellerSignup = async (req, res) => {
     sellerDetails: { onboardingStep: 1, approvalStatus: 'pending' },
   })
 
-    await tryEmail(email, name, otp, 'verify', phone)
+  await tryEmail(email, name, otp, 'verify', phone)
   return ok(res, isDev
     ? 'Seller account created! Use OTP: 123456'
     : 'Seller account created! Check email for OTP',
