@@ -5,7 +5,7 @@ import useAuthStore from '../context/useAuthStore.js'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000, // 30s — Render free tier slow start ke liye
+  timeout: 60000, // 30s — Render free tier slow start ke liye
 })
 
 // Request interceptor — token attach karo
