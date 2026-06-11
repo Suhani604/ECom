@@ -5,6 +5,7 @@ import {
   verifyRefreshToken, generateOTP, otpExpiry
 } from '../utils/jwtHelper.js'
 import { sendOTPEmail } from '../utils/emailHelper.js'
+import { sendOTPSMS } from '../utils/smsHelper.js'
 
 // ── helper ────────────────────────────────────────────────────────────────────
 const ok  = (res, msg, data = {}, code = 200) =>
