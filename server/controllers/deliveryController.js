@@ -1,6 +1,7 @@
 import DeliveryPartner from '../models/DeliveryPartner.js'
 import Order from '../models/Order.js'
 import { sendOTPSMS } from '../utils/smsHelper.js'
+import { sendOutForDeliveryEmail } from '../utils/emailHelper.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import {
@@ -59,7 +60,7 @@ export const toggleOnlineStatus = async (req, res) => {
 export const getMyDeliveries = async (req, res) => {
   try {
     const orders = await Order.find({ deliveryBoy: req.user.id })
-      .populate('buyer', 'name phone')
+      .populate('buyer', 'name phone email')
       .sort({ createdAt: -1 })
     res.json({ orders })
   } catch (err) {
@@ -86,7 +87,7 @@ export const markPickedUp = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('items.seller')
-      .populate('buyer', 'name phone')  // ✅ buyer populate karo SMS ke liye
+      .populate('buyer', 'name phone email')  // ✅ buyer populate karo SMS ke liye
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
     // ✅ FIX: Pickup ke time OTP generate karo aur DB mein save karo
@@ -110,6 +111,16 @@ export const markPickedUp = async (req, res) => {
         console.error(`❌ SMS failed (non-blocking): ${smsErr.message}`)
       }
     }
+    // SMS ke baad yeh add karo:
+if (order.buyer?.email) {
+  sendOutForDeliveryEmail(
+    order.buyer.email,
+    order.buyer.name,
+    order._id,
+    `https://ecom-backend-6f19.onrender.com/track/${order._id}`
+  ).catch(e => console.error('Delivery email failed:', e.message))
+}
+
 
     // Real-time emit
     const io = req.app.get('io')
@@ -217,7 +228,7 @@ export const getEarnings = async (req, res) => {
 export const resendOTP = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('buyer', 'name phone')
+      .populate('buyer', 'name phone email')
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
     const newOTP = Math.floor(1000 + Math.random() * 9000).toString()
@@ -235,6 +246,15 @@ export const resendOTP = async (req, res) => {
         console.log(`❌ SMS failed: ${smsErr.message}`)
       }
     }
+
+  if (order.buyer?.email) {
+  sendOutForDeliveryEmail(
+    order.buyer.email,
+    order.buyer.name,
+    order._id,
+    `https://ecom-backend-6f19.onrender.com/track/${order._id}`
+  ).catch(e => console.error('Delivery email failed:', e.message))
+}
 
     res.json({ message: 'OTP sent to customer via SMS!' })
   } catch (err) {
