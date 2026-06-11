@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer'
 
 const createTransporter = () => {
+  
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     return null
   }
@@ -44,11 +45,12 @@ export const sendOTPEmail = async (toEmail, name, otp, purpose = 'verify') => {
   `
 
   await transporter.sendMail({
-    from:    `"KidsMenWomen" <${process.env.EMAIL_USER}>`,
-    to:      toEmail,
-    subject: subjects[purpose] || subjects.verify,
-    html,
-  })
+  from: `"KidsMenWomen" <jungharesuhani6@gmail.com>`,
+  to:      toEmail,
+  subject: subjects[purpose] || subjects.verify,
+  html,
+})
+console.log(`✅ Email sent to ${toEmail}`)
 }
 // ADD this at the bottom of your existing emailHelper.js
 

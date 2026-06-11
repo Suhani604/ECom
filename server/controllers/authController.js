@@ -23,7 +23,7 @@ const tryEmail = (email, name, otp, type, phone = null) => {
   console.log(`\n🔑 OTP for ${email}: ${otp}\n`)
   // ── FIX: fire-and-forget — don't await so request doesn't hang ─────────────
   // Render free tier mein SMTP timeout hota hai — non-blocking rakho
-  sendOTPEmail(email, name, otp, type).catch(e => console.error('Email failed:', e.message))
+  sendOTPEmail(email, name, otp, type).catch(e => console.error('❌ Email failed FULL ERROR:', e))
   if (phone) {
     sendOTPSMS(phone, otp).catch(e => console.error('SMS failed:', e.message))
   }
