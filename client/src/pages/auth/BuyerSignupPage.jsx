@@ -36,7 +36,7 @@ export default function BuyerSignupPage() {
       const { data } = await api.post('/auth/signup/buyer', {
         name: form.name, email: form.email,
         phone: form.phone, password: form.password,
-      })
+      }, { timeout: 60000 })
       setUserId(data.userId)
       setEmail(form.email)
       setStep(2)
