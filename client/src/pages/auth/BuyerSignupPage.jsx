@@ -6,6 +6,9 @@ import useAuthStore from '../../context/useAuthStore.js'
 
 const f = '"DM Sans", Poppins, sans-serif'
 
+// ── FIX: Vite uses import.meta.env.MODE, NOT process.env.NODE_ENV ─────────────
+const isDev = import.meta.env.MODE !== 'production'
+
 export default function BuyerSignupPage() {
   const navigate   = useNavigate()
   const storeLogin = useAuthStore((s) => s.login)
@@ -17,21 +20,40 @@ export default function BuyerSignupPage() {
   const [otp,     setOtp]     = useState('')
   const [focused, setFocused] = useState('')
   const [showPw,  setShowPw]  = useState(false)
-  const [form,    setForm]    = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' })
+  const [form,    setForm]    = useState({ name: '', email: '', phone: '', password: '' })
 
   const handleSignup = async (e) => {
     e.preventDefault()
-    if (!form.name || !form.email || !form.phone || !form.password) return toast.error('All fields are required')
-    if (form.password !== form.confirmPassword) return toast.error('Passwords do not match')
-    if (form.password.length < 6) return toast.error('Password must be at least 6 characters')
-    if (!/^[6-9]\d{9}$/.test(form.phone)) return toast.error('Enter valid 10-digit mobile number')
+    if (!form.name || !form.email || !form.phone || !form.password)
+      return toast.error('All fields are required')
+    if (form.password.length < 6)
+      return toast.error('Password must be at least 6 characters')
+    if (!/^[6-9]\d{9}$/.test(form.phone))
+      return toast.error('Enter valid 10-digit mobile number')
+
     setLoading(true)
     try {
-      const { data } = await api.post('/auth/signup/buyer', { name: form.name, email: form.email, phone: form.phone, password: form.password })
-      setUserId(data.userId); setEmail(form.email); setStep(2)
-      toast.success('OTP sent! Use 123456 in dev mode.')
-    } catch (err) { toast.error(err.response?.data?.message || 'Signup failed') }
-    finally { setLoading(false) }
+      const { data } = await api.post('/auth/signup/buyer', {
+        name: form.name, email: form.email,
+        phone: form.phone, password: form.password,
+      })
+      setUserId(data.userId)
+      setEmail(form.email)
+      setStep(2)
+      // ── FIX: isDev constant use karo ─────────────────────────────────────
+      toast.success(
+        isDev
+          ? 'OTP hai: 123456 (dev mode) 🔑'
+          : 'OTP bheja gaya! Email check karo 📧'
+      )
+    } catch (error) {
+      // ── FIX: server ka exact message dikhao, generic nahi ────────────────
+      const msg = error.response?.data?.message || error.message || 'Signup failed. Try again.'
+      toast.error(msg)
+      console.error('Signup error:', error.response?.data || error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleVerifyOTP = async (e) => {
@@ -42,13 +64,21 @@ export default function BuyerSignupPage() {
       const { data } = await api.post('/auth/verify-otp', { userId, otp })
       storeLogin(data.user, data.token)
       toast.success('Account created! Happy shopping 🛍️')
-      if (redirectTo) {
-        navigate(redirectTo, { replace: true })
-      } else {
-        navigate('/home', { replace: true })
-}
-    } catch (err) { toast.error(err.response?.data?.message || 'Invalid OTP') }
-    finally { setLoading(false) }
+      navigate(redirectTo || '/home', { replace: true })
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Invalid OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendOTP = async () => {
+    try {
+      await api.post('/auth/resend-otp', { userId })
+      toast.success(isDev ? 'OTP: 123456 (dev mode)' : 'OTP resent to your email!')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Could not resend OTP')
+    }
   }
 
   const inp = (name) => ({
@@ -67,31 +97,19 @@ export default function BuyerSignupPage() {
         .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(233,30,140,0.4) !important; }
         .top-nav-link:hover { background: rgba(255,255,255,0.12) !important; color: white !important; }
         .card-shadow { box-shadow: 0 20px 60px rgba(15,10,30,0.12), 0 4px 16px rgba(15,10,30,0.06); }
+        .resend-btn:hover { color: #E91E8C !important; }
       `}</style>
 
-      {/* ── TOP DARK BANNER ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1A0E21 0%, #4A2040 0%, #8C5374 200%)',
-        padding: '0 42px',
-        position: 'relative',
-        overflow: 'hidden',
-        flexShrink: 0,
-      }}>
+      {/* TOP DARK BANNER */}
+      <div style={{ background: 'linear-gradient(135deg, #1A0E21 0%, #4A2040 0%, #8C5374 200%)', padding: '0 42px', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(ellipse at 15% 50%, rgba(233,30,140,0.15) 0%, transparent 55%), radial-gradient(ellipse at 80% 30%, rgba(124,58,237,0.2) 0%, transparent 50%)' }} />
-
-        {/* Main nav row */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '60px 0' }}>
-          {/* Brand */}
-          <div 
-           onClick={() => navigate('/home')}
-           style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div onClick={() => navigate('/home')} style={{ display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer' }}>
             <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(233,30,140,0.4)', flexShrink: 0 }}>
               <span style={{ color: 'white', fontSize: '25px', fontWeight: '800' }}>S</span>
-            </div> 
-            <span style={{ background: 'linear-gradient(90deg,#F472B6,#A78BFA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',fontSize: '23px', fontWeight: '700', letterSpacing: '-0.3px' }}>StyleHub</span>
+            </div>
+            <span style={{ background: 'linear-gradient(90deg,#F472B6,#A78BFA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '23px', fontWeight: '700', letterSpacing: '-0.3px' }}>StyleHub</span>
           </div>
-
-          {/* Features */}
           <div style={{ display: 'flex', gap: '30px' }}>
             {[['✨', 'Curated Collections'], ['🚚', 'Free ₹499+'], ['🔒', '100% Secure'], ['↩️', 'Easy Returns']].map(([icon, text]) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -100,34 +118,16 @@ export default function BuyerSignupPage() {
               </div>
             ))}
           </div>
-
-          {/* ── TOP-RIGHT NAV LINKS ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Link to="/login" className="top-nav-link" style={{
-              color: 'rgba(0,204,255,0.75)', fontSize: '16px', fontWeight: '600',
-              textDecoration: 'none', padding: '8px 16px', borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.15)', transition: 'all 0.2s',
-              background: 'rgba(0,204,255,0.06)',
-            }}>
-              Sign In
-            </Link>
-            <Link to="/signup/seller" className="top-nav-link" style={{
-              color: 'rgba(167,139,250,0.9)', fontSize: '16px', fontWeight: '600',
-              textDecoration: 'none', padding: '8px 16px', borderRadius: '8px',
-              border: '1px solid rgba(124,58,237,0.3)', transition: 'all 0.2s',
-              background: 'rgba(124,58,237,0.1)',
-            }}>
-              🏪 Sell with us
-            </Link>
+            <Link to="/login" className="top-nav-link" style={{ color: 'rgba(0,204,255,0.75)', fontSize: '16px', fontWeight: '600', textDecoration: 'none', padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', transition: 'all 0.2s', background: 'rgba(0,204,255,0.06)' }}>Sign In</Link>
+            <Link to="/signup/seller" className="top-nav-link" style={{ color: 'rgba(167,139,250,0.9)', fontSize: '16px', fontWeight: '600', textDecoration: 'none', padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(124,58,237,0.3)', transition: 'all 0.2s', background: 'rgba(124,58,237,0.1)' }}>🏪 Sell with us</Link>
           </div>
         </div>
-
-        {/* Stats strip */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', paddingBottom: '15px', display: 'flex', gap: '30px', alignItems: 'center' }}>
           {[['50K+','Shoppers'], ['1K+', 'Brands'], ['4.9★', 'Rating']].map(([val, label]) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ color: 'white', fontWeight: '800', fontSize: '14px' }}>{val}</span>
-              <span style={{ color: 'white', fontSize: '14px', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</span>
+              <span style={{ color: 'white', fontSize: '14px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</span>
             </div>
           ))}
           <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>·</span>
@@ -138,11 +138,11 @@ export default function BuyerSignupPage() {
         </div>
       </div>
 
-      {/* ── MAIN CONTENT ── */}
+      {/* MAIN CONTENT */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
         <div className="card-shadow" style={{ width: '100%', maxWidth: '420px', background: 'white', borderRadius: '20px', padding: '36px 32px' }}>
 
-          {/* Logo */}
+          {/* Logo + Title */}
           <div style={{ textAlign: 'center', marginBottom: '22px' }}>
             <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 8px 24px rgba(233,30,140,0.3)' }}>
               <span style={{ color: 'white', fontSize: '22px', fontWeight: '800' }}>S</span>
@@ -200,17 +200,6 @@ export default function BuyerSignupPage() {
                     </button>
                   </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Confirm Password</label>
-                  <input type="password" value={form.confirmPassword}
-                    onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
-                    onFocus={() => setFocused('cpw')} onBlur={() => setFocused('')}
-                    placeholder="Repeat password" style={inp('cpw')} />
-                  {form.confirmPassword && form.password !== form.confirmPassword && (
-                    <p style={{ fontSize: '11px', color: '#DC2626', margin: '4px 0 0', fontWeight: '500' }}>⚠ Passwords don't match</p>
-                  )}
-                </div>
-
                 <button type="submit" disabled={loading} className="submit-btn"
                   style={{ width: '100%', padding: '13px', background: loading ? '#F3E8F0' : 'linear-gradient(135deg,#E91E8C 0%,#9333EA 100%)', color: loading ? '#C084A0' : 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: f, boxShadow: loading ? 'none' : '0 6px 20px rgba(233,30,140,0.3)', transition: 'all 0.2s', marginTop: '2px' }}>
                   {loading ? 'Creating Account...' : 'Create Account →'}
@@ -223,20 +212,18 @@ export default function BuyerSignupPage() {
                 <div style={{ fontSize: '32px', marginBottom: '6px' }}>📧</div>
                 <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 3px', fontWeight: '500' }}>We sent a 6-digit code to</p>
                 <p style={{ fontSize: '14px', fontWeight: '700', color: '#E91E8C', margin: '0 0 6px' }}>{email}</p>
-                <span style={{ fontSize: '11px', color: '#94A3B8', background: 'white', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' }}>Dev mode: use 123456</span>
+                {/* ── FIX: dev mode mein OTP seedha dikhao ── */}
+                {isDev && (
+                  <p style={{ fontSize: '12px', color: '#7C3AED', fontWeight: '700', margin: 0, background: '#F5F0FF', padding: '4px 10px', borderRadius: '6px', display: 'inline-block' }}>
+                    🔑 Dev OTP: 123456
+                  </p>
+                )}
               </div>
 
+              {/* OTP digit boxes */}
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '14px' }}>
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} style={{
-                    width: '44px', height: '50px',
-                    border: `2px solid ${otp[i] ? '#E91E8C' : '#E2E8F0'}`,
-                    borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '18px', fontWeight: '800', color: '#0F172A',
-                    background: otp[i] ? '#FDF0F8' : 'white',
-                    boxShadow: otp[i] ? '0 0 0 3px rgba(233,30,140,0.1)' : 'none',
-                    transition: 'all 0.2s',
-                  }}>
+                  <div key={i} style={{ width: '44px', height: '50px', border: `2px solid ${otp[i] ? '#E91E8C' : '#E2E8F0'}`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '800', color: '#0F172A', background: otp[i] ? '#FDF0F8' : 'white', boxShadow: otp[i] ? '0 0 0 3px rgba(233,30,140,0.1)' : 'none', transition: 'all 0.2s' }}>
                     {otp[i] || ''}
                   </div>
                 ))}
@@ -245,53 +232,41 @@ export default function BuyerSignupPage() {
               <input value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6} placeholder="Enter 6-digit OTP"
                 onFocus={() => setFocused('otp')} onBlur={() => setFocused('')}
-                style={{
-                  width: '100%', padding: '12px 16px',
-                  border: `1.5px solid ${focused === 'otp' ? '#E91E8C' : '#E2E8F0'}`,
-                  borderRadius: '10px', fontSize: '20px', outline: 'none', fontFamily: f,
-                  boxSizing: 'border-box', textAlign: 'center', letterSpacing: '10px', fontWeight: '800',
-                  background: focused === 'otp' ? '#FDF0F8' : '#FAFAFA', marginBottom: '14px',
-                  boxShadow: focused === 'otp' ? '0 0 0 4px rgba(233,30,140,0.08)' : 'none', transition: 'all 0.2s',
-                }} />
+                style={{ width: '100%', padding: '12px 16px', border: `1.5px solid ${focused === 'otp' ? '#E91E8C' : '#E2E8F0'}`, borderRadius: '10px', fontSize: '20px', outline: 'none', fontFamily: f, boxSizing: 'border-box', textAlign: 'center', letterSpacing: '10px', fontWeight: '800', background: focused === 'otp' ? '#FDF0F8' : '#FAFAFA', marginBottom: '14px', boxShadow: focused === 'otp' ? '0 0 0 4px rgba(233,30,140,0.08)' : 'none', transition: 'all 0.2s' }} />
 
               <button type="submit" disabled={loading || otp.length !== 6} className="submit-btn"
                 style={{ width: '100%', padding: '13px', background: otp.length === 6 ? 'linear-gradient(135deg,#E91E8C,#9333EA)' : '#F1F5F9', color: otp.length === 6 ? 'white' : '#94A3B8', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: otp.length === 6 ? 'pointer' : 'not-allowed', fontFamily: f, boxShadow: otp.length === 6 ? '0 6px 20px rgba(233,30,140,0.3)' : 'none', transition: 'all 0.2s' }}>
                 {loading ? 'Verifying...' : 'Verify & Continue ✓'}
               </button>
 
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <span style={{ fontSize: '12px', color: '#94A3B8' }}>OTP nahi mila? </span>
+                <button type="button" onClick={handleResendOTP} className="resend-btn"
+                  style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: f, textDecoration: 'underline', transition: 'color 0.2s' }}>
+                  Resend OTP
+                </button>
+              </div>
+
               <button type="button" onClick={() => setStep(1)}
-                style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '13px', cursor: 'pointer', marginTop: '6px', fontFamily: f, fontWeight: '600' }}>
+                style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '13px', cursor: 'pointer', marginTop: '8px', fontFamily: f, fontWeight: '600' }}>
                 ← Back to form
               </button>
             </form>
           )}
 
           <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            <button
-              onClick={() => navigate('/home')}
-              style={{
-                background: 'none', border: 'none', color: '#94A3B8',
-                fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: f,
-                display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px',
-                borderRadius: '8px', transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#E91E8C'; e.currentTarget.style.background = '#FDF0F8'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'none'; }}
-            >
+            <button onClick={() => navigate('/home')}
+              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: f, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#E91E8C'; e.currentTarget.style.background = '#FDF0F8' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'none' }}>
               ← Back to Home
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── BOTTOM DARK BANNER ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0F0A1E 0%, #1E0A3C 50%, #3B0764 100%)',
-        padding: '14px 32px',
-        position: 'relative',
-        overflow: 'hidden',
-        flexShrink: 0,
-      }}>
+      {/* BOTTOM BANNER */}
+      <div style={{ background: 'linear-gradient(135deg, #0F0A1E 0%, #1E0A3C 50%, #3B0764 100%)', padding: '14px 32px', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(ellipse at 85% 50%, rgba(233,30,140,0.1) 0%, transparent 50%)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
           <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: '500' }}>© 2025 StyleHub. All rights reserved.</span>
