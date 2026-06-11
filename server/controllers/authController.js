@@ -5,28 +5,31 @@ import {
   verifyRefreshToken, generateOTP, otpExpiry
 } from '../utils/jwtHelper.js'
 import { sendOTPEmail } from '../utils/emailHelper.js'
-import { sendOTPSMS } from '../utils/smsHelper.js'
 
+// ── helper ────────────────────────────────────────────────────────────────────
 const ok  = (res, msg, data = {}, code = 200) =>
   res.status(code).json({ success: true,  message: msg, ...data })
 const err = (res, msg, code = 400) =>
   res.status(code).json({ success: false, message: msg })
 
+// ── DEV OTP helper ────────────────────────────────────────────────────────────
+// In development: OTP is always 123456 (no email needed)
+// In production:  real random OTP sent via email
 const isDev = process.env.NODE_ENV !== 'production'
 const getOTP = () => isDev ? '123456' : generateOTP()
-
-const tryEmail = async (email, name, otp, type, phone = null) => {
+const tryEmail = (email, name, otp, type, phone = null) => {
+  // ── Always log OTP in terminal ──────────────────────────────────────────────
   console.log(`\n🔑 OTP for ${email}: ${otp}\n`)
-  try { await sendOTPEmail(email, name, otp, type) }
-  catch (e) { console.error('Email failed:', e.message) }
+  // ── FIX: fire-and-forget — don't await so request doesn't hang ─────────────
+  // Render free tier mein SMTP timeout hota hai — non-blocking rakho
+  sendOTPEmail(email, name, otp, type).catch(e => console.error('Email failed:', e.message))
   if (phone) {
-    try { await sendOTPSMS(phone, otp) }
-    catch (e) { console.error('SMS failed:', e.message) }
+    sendOTPSMS(phone, otp).catch(e => console.error('SMS failed:', e.message))
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BUYER SIGNUP — FIX: unverified user ko overwrite karo, block mat karo
+// BUYER SIGNUP
 // ═══════════════════════════════════════════════════════════════════════════════
 export const buyerSignup = async (req, res) => {
   const { name, email, phone, password } = req.body
@@ -37,23 +40,6 @@ export const buyerSignup = async (req, res) => {
 
   const exists = await User.findOne({ $or: [{ email }, { phone }] })
   if (exists) {
-    // ✅ FIX: Agar user hai but verify nahi hua (incomplete signup) → re-signup allow karo
-    if (!exists.isVerified) {
-      const otp    = getOTP()
-      const expiry = otpExpiry()
-      exists.name      = name
-      exists.phone     = phone
-      exists.password  = password  // pre-save hook re-hash karega
-      exists.otp       = otp
-      exists.otpExpiry = expiry
-      await exists.save()
-      await tryEmail(email, name, otp, 'verify', phone)
-      return ok(res, isDev
-        ? 'Account created! Use OTP: 123456'
-        : 'Account created! Check email for OTP',
-      { userId: exists._id, email: exists.email }, 201)
-    }
-    // Verified user hai → block karo
     if (exists.email === email) return err(res, 'Email already registered', 409)
     return err(res, 'Phone number already registered', 409)
   }
@@ -66,7 +52,7 @@ export const buyerSignup = async (req, res) => {
     role: 'buyer', otp, otpExpiry: expiry, isVerified: false,
   })
 
-  await tryEmail(email, name, otp, 'verify', phone)
+  tryEmail(email, name, otp, 'verify', phone)
 
   return ok(res, isDev
     ? 'Account created! Use OTP: 123456'
@@ -75,7 +61,7 @@ export const buyerSignup = async (req, res) => {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SELLER SIGNUP — same fix applied
+// SELLER SIGNUP
 // ═══════════════════════════════════════════════════════════════════════════════
 export const sellerSignup = async (req, res) => {
   const { name, email, phone, password } = req.body
@@ -86,21 +72,6 @@ export const sellerSignup = async (req, res) => {
 
   const exists = await User.findOne({ $or: [{ email }, { phone }] })
   if (exists) {
-    if (!exists.isVerified) {
-      const otp    = getOTP()
-      const expiry = otpExpiry()
-      exists.name      = name
-      exists.phone     = phone
-      exists.password  = password
-      exists.otp       = otp
-      exists.otpExpiry = expiry
-      await exists.save()
-      await tryEmail(email, name, otp, 'verify', phone)
-      return ok(res, isDev
-        ? 'Seller account created! Use OTP: 123456'
-        : 'Seller account created! Check email for OTP',
-      { userId: exists._id, email: exists.email }, 201)
-    }
     if (exists.email === email) return err(res, 'Email already registered', 409)
     return err(res, 'Phone number already registered', 409)
   }
@@ -114,7 +85,8 @@ export const sellerSignup = async (req, res) => {
     sellerDetails: { onboardingStep: 1, approvalStatus: 'pending' },
   })
 
-  await tryEmail(email, name, otp, 'verify', phone)
+  tryEmail(email, name, otp, 'verify', phone)
+
   return ok(res, isDev
     ? 'Seller account created! Use OTP: 123456'
     : 'Seller account created! Check email for OTP',
@@ -172,7 +144,7 @@ export const resendOTP = async (req, res) => {
   user.otpExpiry = expiry
   await user.save()
 
-  await tryEmail(user.email, user.name, otp, 'verify')
+  tryEmail(user.email, user.name, otp, 'verify')
 
   return ok(res, isDev ? 'OTP is: 123456' : `OTP resent to ${user.email}`)
 }
@@ -204,7 +176,7 @@ export const login = async (req, res) => {
     user.otp       = otp
     user.otpExpiry = expiry
     await user.save()
-    await tryEmail(user.email, user.name, otp, 'verify')
+    tryEmail(user.email, user.name, otp, 'verify')
     return res.status(403).json({
       success: false,
       message: isDev
@@ -247,7 +219,7 @@ export const requestLoginOTP = async (req, res) => {
   user.otpExpiry = expiry
   await user.save()
 
-  await tryEmail(user.email, user.name, otp, 'login')
+  tryEmail(user.email, user.name, otp, 'login')
 
   return ok(res, isDev ? 'Use OTP: 123456' : `OTP sent to ${user.email}`, { userId: user._id })
 }
@@ -300,7 +272,7 @@ export const forgotPassword = async (req, res) => {
   user.otpExpiry = expiry
   await user.save()
 
-  await tryEmail(user.email, user.name, otp, 'reset')
+  tryEmail(user.email, user.name, otp, 'reset')
 
   return ok(res, isDev ? 'Use OTP: 123456' : 'OTP sent to your email', { userId: user._id })
 }
