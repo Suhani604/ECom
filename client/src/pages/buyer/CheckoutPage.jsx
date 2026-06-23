@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import useCartStore from '../../context/useCartStore.js'
@@ -8,6 +9,7 @@ import {
   getAddressesAPI, addAddressAPI, createOrderAPI,
   createRazorpayOrderAPI, verifyRazorpayPaymentAPI,
 } from '../../api/orderAPI.js'
+import { applyCouponAPI } from '../../api/couponAPI.js'
 
 const f = 'Poppins, sans-serif'
 
@@ -203,6 +205,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { items, totalAmount, clearCart } = useCartStore()
+  const { t } = useTranslation()
 
   const [addresses,    setAddresses]    = useState([])
   const [selectedAddr, setSelectedAddr] = useState(null)
@@ -210,8 +213,11 @@ export default function CheckoutPage() {
   const [showForm,     setShowForm]     = useState(false)
   const [loading,      setLoading]      = useState(false)
   const [addrLoad,     setAddrLoad]     = useState(true)
-
   const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm()
+  const [couponCode,      setCouponCode]      = useState('')
+  const [appliedCoupon,   setAppliedCoupon]   = useState(null)
+  const [couponLoading,   setCouponLoading]   = useState(false)
+  const [showCouponModal, setShowCouponModal] = useState(false)
 
   // ── Charges ────────────────────────────────────────────────────────────────
   const subtotal       = totalAmount()
@@ -221,7 +227,8 @@ export default function CheckoutPage() {
   const isFreeShipping = subtotal >= FREE_SHIPPING_ABOVE
   const shippingFee    = calcShippingFee(totalWeightG, subtotal)
   const codFee         = payMethod === 'cod' ? COD_FEE : 0
-  const grandTotal     = subtotal + shippingFee + codFee
+ const couponDiscount = appliedCoupon?.discount || 0
+const grandTotal     = subtotal + shippingFee + codFee - couponDiscount
 
   const orderPlacedRef = useRef(false)
 
@@ -349,6 +356,25 @@ export default function CheckoutPage() {
     document.head.appendChild(script)
     setTimeout(() => resolve(false), 10000)
   })
+ 
+    const handleApplyCoupon = async () => {
+  if (!couponCode.trim()) return toast.error('Enter a coupon code')
+  setCouponLoading(true)
+  try {
+    const { data } = await applyCouponAPI(couponCode.trim(), subtotal)
+    setAppliedCoupon({ code: data.couponCode, discount: data.discount, description: data.description })
+    toast.success(data.message)
+    setShowCouponModal(false)
+  } catch (e) {
+    toast.error(e.response?.data?.message || 'Invalid coupon')
+  } finally { setCouponLoading(false) }
+}
+
+const handleRemoveCoupon = () => {
+  setAppliedCoupon(null)
+  setCouponCode('')
+  toast.success('Coupon removed')
+}
 
   const placeOrder = async () => {
     if (!user) { navigate('/login?redirect=/checkout'); return }
@@ -383,7 +409,8 @@ export default function CheckoutPage() {
           state:   selectedAddr.state,
           pincode: selectedAddr.pincode,
         },
-        paymentMethod: payMethod,
+        couponCode: appliedCoupon?.code || '',
+        discount:   couponDiscount,
       }
 
       const { data: od } = await createOrderAPI(payload)
@@ -446,7 +473,7 @@ export default function CheckoutPage() {
       {/* Header */}
       <div style={{ background:'white', padding:'0 20px', height:'60px', display:'flex', alignItems:'center', gap:'14px', borderBottom:'1px solid #E2E8F0', position:'sticky', top:0, zIndex:10, boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
         <button onClick={() => navigate('/cart')} style={{ background:'#F1F5F9', border:'none', width:'36px', height:'36px', borderRadius:'8px', cursor:'pointer', fontSize:'18px' }}>←</button>
-        <h1 style={{ fontSize:'18px', fontWeight:'800', color:'#0F172A', margin:0 }}>Checkout</h1>
+        <h1 style={{ fontSize:'18px', fontWeight:'800', color:'#0F172A', margin:0 }}>{t('checkout')}</h1>
       </div>
 
       <div style={{ maxWidth:'680px', margin:'0 auto', padding:'20px 16px', display:'flex', flexDirection:'column', gap:'16px' }}>
@@ -482,12 +509,12 @@ export default function CheckoutPage() {
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
               <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>📍</div>
-              <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>Delivery Address</h2>
+              <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>{t('deliveryAddress')}</h2>
             </div>
             {/* CHANGED: onClick now calls openAddForm() instead of setShowForm(!showForm) */}
             <button onClick={() => showForm ? (setShowForm(false), reset()) : openAddForm()}
               style={{ padding:'8px 16px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'12px', fontWeight:'700', fontFamily:f }}>
-              + Add New
+              + {t('addNew')}
             </button>
           </div>
 
@@ -496,38 +523,38 @@ export default function CheckoutPage() {
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'12px' }}>
                 <div>
-                  <label style={label}>Full Name *</label>
+                  <label style={label}>{t('fullName')}*</label>
                   <input {...register('name', { required: true })} placeholder="Recipient name" style={inp} />
                   {errors.name && <p style={{ fontSize:'11px', color:'#BE123C', margin:'3px 0 0' }}>Name required</p>}
                 </div>
                 <div>
-                  <label style={label}>Phone *</label>
+                  <label style={label}>{t('phone')}*</label>
                   <input {...register('phone', { required: true, pattern: /^[6-9]\d{9}$/ })} placeholder="10-digit mobile" style={inp} />
                   {errors.phone && <p style={{ fontSize:'11px', color:'#BE123C', margin:'3px 0 0' }}>Valid phone required</p>}
                 </div>
               </div>
               <div style={{ marginBottom:'12px' }}>
-                <label style={label}>Address Line 1 *</label>
+                <label style={label}>{t('addressLine1')}*</label>
                 <input {...register('line1', { required: true })} placeholder="House no., street name" style={inp} />
                 {errors.line1 && <p style={{ fontSize:'11px', color:'#BE123C', margin:'3px 0 0' }}>Address required</p>}
               </div>
               <div style={{ marginBottom:'12px' }}>
-                <label style={label}>Address Line 2</label>
+                <label style={label}>{t('addressLine2')}</label>
                 <input {...register('line2')} placeholder="Area, landmark (optional)" style={inp} />
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px', marginBottom:'16px' }}>
                 <div>
-                  <label style={label}>City *</label>
+                  <label style={label}>{t('city')}*</label>
                   <input {...register('city', { required: true })} placeholder="City" style={inp} />
                   {errors.city && <p style={{ fontSize:'11px', color:'#BE123C', margin:'3px 0 0' }}>Required</p>}
                 </div>
                 <div>
-                  <label style={label}>Pincode *</label>
+                  <label style={label}>{t('pincode')}*</label>
                   <input {...register('pincode', { required: true, pattern: /^\d{6}$/ })} placeholder="6 digits" maxLength={6} style={inp} />
                   {errors.pincode && <p style={{ fontSize:'11px', color:'#BE123C', margin:'3px 0 0' }}>6-digit required</p>}
                 </div>
                 <div>
-                  <label style={label}>State *</label>
+                  <label style={label}>{t('state')} *</label>
                   <select {...register('state', { required: true })} style={{ ...inp, background:'white' }}>
                     <option value="">State</option>
                     {STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -542,7 +569,7 @@ export default function CheckoutPage() {
                 </button>
                 <button type="submit" disabled={loading}
                   style={{ flex:1, padding:'11px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'10px', cursor:'pointer', fontWeight:'700', fontFamily:f, fontSize:'13px' }}>
-                  {loading ? 'Saving...' : 'Save Address'}
+                 {loading ? t('saving') : t('saveAddress')}
                 </button>
               </div>
             </form>
@@ -555,10 +582,10 @@ export default function CheckoutPage() {
           ) : addresses.length === 0 ? (
             <div style={{ textAlign:'center', padding:'28px', color:'#94A3B8' }}>
               <div style={{ fontSize:'36px', marginBottom:'10px' }}>📍</div>
-              <p style={{ margin:'0 0 12px', fontSize:'14px' }}>No addresses saved yet</p>
+              <p style={{ margin:'0 0 12px', fontSize:'14px' }}>{t('noAddressSaved')}</p>
               <button onClick={openAddForm}
                 style={{ padding:'10px 20px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'10px', cursor:'pointer', fontWeight:'700', fontFamily:f, fontSize:'13px' }}>
-                Add First Address
+                {t('addFirstAddress')}
               </button>
             </div>
           ) : (
@@ -586,7 +613,7 @@ export default function CheckoutPage() {
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
             <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>💳</div>
-            <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>Payment Method</h2>
+            <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>{t('paymentMethod')}</h2>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
             {[
@@ -608,11 +635,86 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* ── Coupon Section ── */}
+<div style={card}>
+  <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom: appliedCoupon ? '12px' : '0' }}>
+    <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>🏷️</div>
+    <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px', flex:1 }}>Coupons</h2>
+    {!appliedCoupon ? (
+      <button onClick={() => setShowCouponModal(true)}
+        style={{ padding:'8px 16px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'12px', fontWeight:'700', fontFamily:f }}>
+        APPLY
+      </button>
+    ) : (
+      <button onClick={handleRemoveCoupon}
+        style={{ padding:'6px 12px', background:'#FEE2E2', color:'#DC2626', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'12px', fontWeight:'700', fontFamily:f }}>
+        REMOVE
+      </button>
+    )}
+  </div>
+  {appliedCoupon && (
+    <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:'10px', padding:'12px 14px', display:'flex', alignItems:'center', gap:'10px' }}>
+      <span style={{ fontSize:'20px' }}>✅</span>
+      <div>
+        <p style={{ fontSize:'13px', fontWeight:'800', color:'#15803D', margin:'0 0 2px' }}>"{appliedCoupon.code}" Applied! You save ₹{appliedCoupon.discount}</p>
+        {appliedCoupon.description && <p style={{ fontSize:'11px', color:'#16A34A', margin:0 }}>{appliedCoupon.description}</p>}
+      </div>
+    </div>
+  )}
+</div>
+
+{/* ── Coupon Modal ── */}
+{showCouponModal && (
+  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}
+    onClick={e => e.target === e.currentTarget && setShowCouponModal(false)}>
+    <div style={{ background:'white', borderRadius:'2px', padding:'24px 20px', width:'100%', maxWidth:'480px', maxHeight:'80vh', overflowY:'auto' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px' }}>
+        <h3 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'18px' }}>Apply Coupon</h3>
+        <button onClick={() => setShowCouponModal(false)}
+          style={{ background:'#F1F5F9', border:'none', width:'32px', height:'32px', borderRadius:'8px', cursor:'pointer', fontSize:'18px' }}>×</button>
+      </div>
+      <div style={{ display:'flex', gap:'10px', marginBottom:'24px' }}>
+        <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())}
+          onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
+          placeholder="Enter coupon code"
+          style={{ flex:1, padding:'12px 14px', border:'1.5px solid #ec4899', borderRadius:'10px', fontSize:'14px', fontWeight:'700', outline:'none', fontFamily:f, letterSpacing:'1px' }} />
+        <button onClick={handleApplyCoupon} disabled={couponLoading}
+          style={{ padding:'12px 20px', background:'linear-gradient(135deg,#ec4899,#f97316)', color:'white', border:'none', borderRadius:'10px', cursor:'pointer', fontWeight:'700', fontSize:'14px', fontFamily:f }}>
+          {couponLoading ? '...' : 'CHECK'}
+        </button>
+      </div>
+      <p style={{ fontSize:'13px', fontWeight:'700', color:'#374151', marginBottom:'12px' }}>Available Offers</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+        {[
+          { code:'FIRST50',    desc:'50% off on first order (max ₹200)', min:'Min. ₹299', tag:'First Order' },
+          { code:'WELCOME100', desc:'₹100 off on orders above ₹499',     min:'Min. ₹499', tag:'New User' },
+          { code:'REFER50',    desc:'₹50 off for referred users',         min:'Min. ₹199', tag:'Referral' },
+        ].map(c => (
+          <div key={c.code} style={{ border:'1.5px dashed #E2E8F0', borderRadius:'12px', padding:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
+                <span style={{ background:'#FFF0F9', color:'#ec4899', fontSize:'12px', fontWeight:'800', padding:'2px 8px', borderRadius:'6px', border:'1px dashed #ec4899' }}>{c.code}</span>
+                <span style={{ background:'#EFF6FF', color:'#3B82F6', fontSize:'10px', fontWeight:'700', padding:'2px 6px', borderRadius:'4px' }}>{c.tag}</span>
+              </div>
+              <p style={{ fontSize:'12px', color:'#374151', margin:'0 0 2px' }}>{c.desc}</p>
+              <p style={{ fontSize:'11px', color:'#94A3B8', margin:0 }}>{c.min}</p>
+            </div>
+            <button onClick={() => { setCouponCode(c.code); setTimeout(handleApplyCoupon, 100) }}
+              style={{ padding:'8px 14px', background:'white', color:'#ec4899', border:'1.5px solid #ec4899', borderRadius:'8px', cursor:'pointer', fontWeight:'700', fontSize:'12px', fontFamily:f, flexShrink:0 }}>
+              APPLY
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+      
         {/* ── Order Summary ─────────────────────────────────────────────── */}
         <div style={card}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
             <div style={{ width:'36px', height:'36px', background:'#FFF0F9', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>🛒</div>
-            <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>Order Summary</h2>
+            <h2 style={{ fontWeight:'800', color:'#0F172A', margin:0, fontSize:'16px' }}>{t('orderSummary')}</h2>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'16px' }}>
             {items.map((item, i) => (
@@ -651,6 +753,12 @@ export default function CheckoutPage() {
                   : <span style={{ color:'#374151' }}>₹{shippingFee}</span>
                 }
               </div>
+              {couponDiscount > 0 && (
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px' }}>
+                <span style={{ color:'#64748B' }}>Coupon Discount ({appliedCoupon?.code})</span>
+                <span style={{ color:'#16A34A', fontWeight:'700' }}>− ₹{couponDiscount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
               {payMethod === 'cod' && (
                 <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px' }}>
                   <span style={{ color:'#64748B' }}>COD Handling Fee</span>
@@ -665,7 +773,7 @@ export default function CheckoutPage() {
               )}
               <div style={{ height:'1px', background:'#E2E8F0' }} />
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'15px', fontWeight:'800', color:'#0F172A' }}>Total Amount</span>
+                <span style={{ fontSize:'15px', fontWeight:'800', color:'#0F172A' }}>{t('total')}</span>
                 <span style={{ fontSize:'20px', fontWeight:'900', color:'#ec4899' }}>₹{grandTotal.toLocaleString('en-IN')}</span>
               </div>
               {discount > 0 && (
@@ -692,11 +800,9 @@ export default function CheckoutPage() {
             fontWeight:'800', fontSize:'16px', fontFamily:f,
             boxShadow: loading || !selectedAddr ? 'none' : '0 4px 15px rgba(236,72,153,0.3)',
           }}>
-          {loading
-            ? 'Processing...'
-            : payMethod === 'cod'
-              ? `Place Order (COD) — ₹${grandTotal.toLocaleString('en-IN')}`
-              : `Pay ₹${grandTotal.toLocaleString('en-IN')}`}
+         {loading ? t('processing') : payMethod === 'cod'
+                ? `${t('placeOrderCOD')} — ₹${grandTotal.toLocaleString('en-IN')}`
+                : `${t('pay')} ₹${grandTotal.toLocaleString('en-IN')}`}
         </button>
 
         <p style={{ textAlign:'center', fontSize:'12px', color:'#94A3B8', paddingBottom:'20px' }}>

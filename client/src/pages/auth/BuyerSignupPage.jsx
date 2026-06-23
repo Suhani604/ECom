@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../api/axiosInstance.js'
@@ -10,6 +11,7 @@ const f = '"DM Sans", Poppins, sans-serif'
 const isDev = import.meta.env.MODE !== 'production'
 
 export default function BuyerSignupPage() {
+  const { t } = useTranslation()
   const navigate   = useNavigate()
   const storeLogin = useAuthStore((s) => s.login)
   const redirectTo = new URLSearchParams(window.location.search).get('redirect')
@@ -148,10 +150,10 @@ export default function BuyerSignupPage() {
               <span style={{ color: 'white', fontSize: '22px', fontWeight: '800' }}>S</span>
             </div>
             <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.5px' }}>
-              {step === 1 ? 'Create your account' : 'Verify your email'}
+              {step === 1 ? t('createAccount') : t('verifyEmail')}
             </h2>
             <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0, fontWeight: '500' }}>
-              {step === 1 ? 'Join StyleHub and start shopping today' : `OTP sent to ${email}`}
+              {step === 1 ? t('joinStyleHub') : `${t('otpSentTo')} ${email}`}
             </p>
           </div>
 
@@ -166,19 +168,19 @@ export default function BuyerSignupPage() {
             <form onSubmit={handleSignup}>
               <div style={{ display: 'grid', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Full Name</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>{t('fullName')}</label>
                   <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                     onFocus={() => setFocused('name')} onBlur={() => setFocused('')}
                     placeholder="Your full name" style={inp('name')} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Email Address</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>{t('emailAddress')}</label>
                   <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                     onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
                     placeholder="email@example.com" style={inp('email')} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Mobile Number</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>{t('mobileNumber')}</label>
                   <div style={{ position: 'relative' }}>
                     <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94A3B8', fontWeight: '600', borderRight: '1px solid #E2E8F0', paddingRight: '10px', zIndex: 1 }}>+91</div>
                     <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
@@ -188,7 +190,7 @@ export default function BuyerSignupPage() {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>Password</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '5px', letterSpacing: '0.3px' }}>{t('password')}</label>
                   <div style={{ position: 'relative' }}>
                     <input type={showPw ? 'text' : 'password'} value={form.password}
                       onChange={e => setForm({ ...form, password: e.target.value })}
@@ -202,7 +204,7 @@ export default function BuyerSignupPage() {
                 </div>
                 <button type="submit" disabled={loading} className="submit-btn"
                   style={{ width: '100%', padding: '13px', background: loading ? '#F3E8F0' : 'linear-gradient(135deg,#E91E8C 0%,#9333EA 100%)', color: loading ? '#C084A0' : 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: f, boxShadow: loading ? 'none' : '0 6px 20px rgba(233,30,140,0.3)', transition: 'all 0.2s', marginTop: '2px' }}>
-                  {loading ? 'Creating Account...' : 'Create Account →'}
+                  {loading ? t('creatingAccount') : t('createAccountBtn')}
                 </button>
               </div>
             </form>
@@ -210,7 +212,7 @@ export default function BuyerSignupPage() {
             <form onSubmit={handleVerifyOTP}>
               <div style={{ background: 'linear-gradient(135deg,#FDF0F8,#F5F0FF)', border: '1.5px dashed #E91E8C', borderRadius: '12px', padding: '18px', textAlign: 'center', marginBottom: '20px' }}>
                 <div style={{ fontSize: '32px', marginBottom: '6px' }}>📧</div>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 3px', fontWeight: '500' }}>We sent a 6-digit code to</p>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 3px', fontWeight: '500' }}>{t('sentOtpTo')}</p>
                 <p style={{ fontSize: '14px', fontWeight: '700', color: '#E91E8C', margin: '0 0 6px' }}>{email}</p>
                 {/* ── FIX: dev mode mein OTP seedha dikhao ── */}
                 {isDev && (
@@ -220,15 +222,6 @@ export default function BuyerSignupPage() {
                 )}
               </div>
 
-              {/* OTP digit boxes */}
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '14px' }}>
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} style={{ width: '44px', height: '50px', border: `2px solid ${otp[i] ? '#E91E8C' : '#E2E8F0'}`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '800', color: '#0F172A', background: otp[i] ? '#FDF0F8' : 'white', boxShadow: otp[i] ? '0 0 0 3px rgba(233,30,140,0.1)' : 'none', transition: 'all 0.2s' }}>
-                    {otp[i] || ''}
-                  </div>
-                ))}
-              </div>
-
               <input value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6} placeholder="Enter 6-digit OTP"
                 onFocus={() => setFocused('otp')} onBlur={() => setFocused('')}
@@ -236,20 +229,20 @@ export default function BuyerSignupPage() {
 
               <button type="submit" disabled={loading || otp.length !== 6} className="submit-btn"
                 style={{ width: '100%', padding: '13px', background: otp.length === 6 ? 'linear-gradient(135deg,#E91E8C,#9333EA)' : '#F1F5F9', color: otp.length === 6 ? 'white' : '#94A3B8', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: otp.length === 6 ? 'pointer' : 'not-allowed', fontFamily: f, boxShadow: otp.length === 6 ? '0 6px 20px rgba(233,30,140,0.3)' : 'none', transition: 'all 0.2s' }}>
-                {loading ? 'Verifying...' : 'Verify & Continue ✓'}
+                {loading ? t('verifying') : t('verifyAndContinue')}
               </button>
 
               <div style={{ textAlign: 'center', marginTop: '12px' }}>
                 <span style={{ fontSize: '12px', color: '#94A3B8' }}>OTP nahi mila? </span>
                 <button type="button" onClick={handleResendOTP} className="resend-btn"
                   style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: f, textDecoration: 'underline', transition: 'color 0.2s' }}>
-                  Resend OTP
+                  {t('resendOtp')}
                 </button>
               </div>
 
               <button type="button" onClick={() => setStep(1)}
                 style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '13px', cursor: 'pointer', marginTop: '8px', fontFamily: f, fontWeight: '600' }}>
-                ← Back to form
+                ← {t('backToForm')}
               </button>
             </form>
           )}
@@ -259,7 +252,7 @@ export default function BuyerSignupPage() {
               style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', fontFamily: f, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#E91E8C'; e.currentTarget.style.background = '#FDF0F8' }}
               onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'none' }}>
-              ← Back to Home
+              ← {t('backToHome')}
             </button>
           </div>
         </div>

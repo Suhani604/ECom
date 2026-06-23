@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../context/useAuthStore.js'
 import useWishlistStore from '../../context/useWishlistStore.js'
@@ -33,6 +34,7 @@ function SectionCard({ icon, title, children }) {
 
 export default function ProfilePage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { user, logout } = useAuthStore()
   const { items: wishlistItems } = useWishlistStore()
   const { items: cartItems } = useCartStore()
@@ -104,9 +106,9 @@ export default function ProfilePage() {
       {/* ── Page Title ──────────────────────────────────────────────────── */}
       <div style={{ background: 'white', borderBottom: '1px solid #F1F5F9', padding: '12px 40px' }}>
         <p style={{ margin: 0, fontSize: '13px', color: '#64748B', fontFamily: f }}>
-          <span style={{ cursor: 'pointer', color: '#E91E8C' }} onClick={() => navigate('/home')}>Home</span>
+          <span style={{ cursor: 'pointer', color: '#E91E8C' }} onClick={() => navigate('/home')}>{t('home')}</span>
           {' › '}
-          <span style={{ fontWeight: '700', color: '#1E293B' }}>My Profile</span>
+          <span style={{ fontWeight: '700', color: '#1E293B' }}>{t('myProfile')}</span>
         </p>
       </div>
 
@@ -136,8 +138,8 @@ export default function ProfilePage() {
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #F1F5F9' }}>
               {[
-                { label: 'Orders',   value: '—', click: () => navigate('/orders') },
-                { label: 'Wishlist', value: wishlistCount, click: () => navigate('/wishlist') },
+                { label: t('myOrders'),   value: '—', click: () => navigate('/orders') },
+                { label: t('wishlist'), value: wishlistCount, click: () => navigate('/wishlist') },
               ].map(s => (
                 <div key={s.label} onClick={s.click} style={{ padding: '16px', textAlign: 'center', cursor: 'pointer', borderRight: s.label === 'Orders' ? '1px solid #F1F5F9' : 'none' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
@@ -180,19 +182,19 @@ export default function ProfilePage() {
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'none', border: 'none', borderLeft: '3px solid transparent', cursor: 'pointer', fontFamily: f, fontSize: '13px', fontWeight: '500', color: '#475569', textAlign: 'left' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                <span>📋</span> My Orders
+                <span>📋</span> {t('myOrders')}
               </button>
               <button onClick={() => navigate('/wishlist')}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'none', border: 'none', borderLeft: '3px solid transparent', cursor: 'pointer', fontFamily: f, fontSize: '13px', fontWeight: '500', color: '#475569', textAlign: 'left' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                <span>🛍️</span> My Wishlist
+                <span>🛍️</span> {t('myWishlist')}
               </button>
               <button onClick={handleLogout}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'none', border: 'none', borderLeft: '3px solid transparent', cursor: 'pointer', fontFamily: f, fontSize: '13px', fontWeight: '600', color: '#EF4444', textAlign: 'left' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderLeft = '3px solid #EF4444' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderLeft = '3px solid transparent' }}>
-                <span>🚪</span> Logout
+                <span>🚪</span> {t('logout')}
               </button>
             </div>
           </div>
@@ -204,33 +206,33 @@ export default function ProfilePage() {
           <div style={{ background: 'linear-gradient(135deg,#FDF2F8,#EDE9FE)', border: '1.5px solid #FBB6E2', borderRadius: '14px', padding: '14px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>👋</span>
             <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#7C3AED', fontFamily: f }}>
-              Welcome back, <span style={{ color: '#E91E8C' }}>{user?.name || user?.fullName || 'User'}</span>!
+              {t('welcomeBack')} <span style={{ color: '#E91E8C' }}>{user?.name || user?.fullName || 'User'}</span>!
             </p>
           </div>
 
           {/* Personal Information */}
-          <SectionCard icon="👤" title="Personal Information">
+          <SectionCard icon="👤" title={t('personalInformation')}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-              <FieldBox label="Full Name"    value={user?.name || user?.fullName} />
-              <FieldBox label="Email Address" value={user?.email} />
-              <FieldBox label="Phone Number"  value={user?.phone} />
-              <FieldBox label="Member Since"  value={memberSince} />
+              <FieldBox label={t('fullName')}    value={user?.name || user?.fullName} />
+              <FieldBox label={t('fullName')}    value={user?.email} />
+              <FieldBox label={t('phoneNumber')}   value={user?.phone} />
+              <FieldBox label={t('memberSince')}  value={memberSince} />
             </div>
           </SectionCard>
 
           {/* Account Details */}
-          <SectionCard icon="🔐" title="Account Details">
+          <SectionCard icon="🔐" title={t('accountDetails')}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-              <FieldBox label="Account Type" value="Buyer" />
-              <FieldBox label="Account Status" value="Active" />
-              <FieldBox label="Email Verified" value={user?.isVerified ? 'Yes ✓' : 'No'} />
-              <FieldBox label="User ID" value={user?._id ? `...${user._id.slice(-8)}` : '—'} />
+              <FieldBox label={t('accountType')}  value="Buyer" />
+              <FieldBox label={t('accountStatus')} value="Active" />
+              <FieldBox label={t('emailVerified')} value={user?.isVerified ? 'Yes ✓' : 'No'} />
+              <FieldBox label={t('userId')}       value={user?._id ? `...${user._id.slice(-8)}` : '—'} />
             </div>
           </SectionCard>
 
           {/* Wishlist preview */}
           {wishlistCount > 0 && (
-            <SectionCard icon="🤍" title="My Wishlist">
+            <SectionCard icon="🤍" title={t('myWishlist')}>
               <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
                 {wishlistItems.slice(0, 5).map(item => (
                   <div key={item._id} style={{ flexShrink: 0, width: '80px', cursor: 'pointer' }}
@@ -244,7 +246,7 @@ export default function ProfilePage() {
               </div>
               <button onClick={() => navigate('/wishlist')}
                 style={{ marginTop: '14px', padding: '8px 20px', background: 'none', border: '1.5px solid #E91E8C', borderRadius: '8px', color: '#E91E8C', fontWeight: '700', fontSize: '12px', cursor: 'pointer', fontFamily: f }}>
-                VIEW ALL →
+                {t('viewAll')} →
               </button>
             </SectionCard>
           )}
@@ -253,11 +255,11 @@ export default function ProfilePage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
             <button onClick={handleLogout}
               style={{ padding: '10px 24px', background: 'white', border: '1.5px solid #E2E8F0', borderRadius: '10px', color: '#64748B', fontWeight: '700', fontSize: '13px', cursor: 'pointer', fontFamily: f }}>
-              Cancel
+              {t('cancel')}
             </button>
             <button
               style={{ padding: '10px 28px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer', fontFamily: f, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(233,30,140,0.35)' }}>
-              💾 Edit Profile
+              💾 {t('editProfile')}
             </button>
           </div>
         </div>

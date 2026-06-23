@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import useAuthStore from '../../context/useAuthStore.js'
 import useCartStore from '../../context/useCartStore.js'
@@ -18,6 +19,7 @@ const redirectTo = searchParams.get('redirect')
   const [showPw,  setShowPw]  = useState(false)
   const [role, setRole] = useState('buyer')
   const [focused, setFocused] = useState('')
+  const { t } = useTranslation()
 
   const handleLogin = async (e) => {
     console.log('redirectTo:', redirectTo)
@@ -138,8 +140,8 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
             <div style={{ width: '54px', height: '54px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 8px 24px rgba(233,30,140,0.3)' }}>
               <span style={{ color: 'white', fontSize: '22px', fontWeight: '800' }}>S</span>
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', margin: '0 0 5px', letterSpacing: '-0.5px' }}>Welcome back</h2>
-            <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0, fontWeight: '500' }}>Sign in to your StyleHub account</p>
+            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', margin: '0 0 5px', letterSpacing: '-0.5px' }}>{t('welcomeBack')}</h2>
+            <p style={{ color: '#94A3B8', fontSize: '13px', margin: 0, fontWeight: '500' }}>{t('signInSubtitle')}</p>
           </div>
 
           <form onSubmit={handleLogin}>
@@ -159,26 +161,26 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
                   ))}
                 </div>
             <div style={{ marginBottom: '14px' }}> 
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px', letterSpacing: '0.3px' }}>Email or Phone Number</label>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px', letterSpacing: '0.3px' }}>{t('emailOrPhone')}</label>
               <input
                 type="text"
                 value={form.emailOrPhone}
                 onChange={e => setForm({ ...form, emailOrPhone: e.target.value })}
                 onFocus={() => setFocused('ep')} onBlur={() => setFocused('')}
-                placeholder="email@example.com or 9876543210"
+                placeholder={t('emailPlaceholder')}
                 style={inp('ep')}
               />
             </div>
 
             <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px', letterSpacing: '0.3px' }}>Password</label>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px', letterSpacing: '0.3px' }}>{t('password')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   onFocus={() => setFocused('pw')} onBlur={() => setFocused('')}
-                  placeholder="Enter your password"
+                 placeholder={t('passwordPlaceholder')}
                   style={{ ...inp('pw'), paddingRight: '48px' }}
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)}
@@ -190,7 +192,7 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
 
             <div style={{ textAlign: 'right', marginBottom: '22px' }}>
               <Link to="/forgot-password" style={{ fontSize: '12px', color: '#E91E8C', fontWeight: '600', textDecoration: 'none' }}>
-                Forgot password?
+                {t('forgotPassword')}
               </Link>
             </div>
 
@@ -207,7 +209,7 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
                 boxShadow: loading ? 'none' : '0 6px 20px rgba(233,30,140,0.3)',
                 transition: 'all 0.2s', letterSpacing: '0.2px',
               }}>
-              {loading ? 'Signing in...' : 'Sign In →'}
+              {loading ? t('signingIn') : t('signIn')}
             </button>
           </form>
 
@@ -224,7 +226,7 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
               fontSize: '13px', fontWeight: '600', color: '#E91E8C', textDecoration: 'none',
               transition: 'all 0.2s', background: 'white',
             }}>
-              🛍️ New here? Create a buyer account
+             🛍️ {t('createBuyerAccount')}
             </Link>
             <Link to="/signup/seller" className="nav-link" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -232,7 +234,7 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
               fontSize: '13px', fontWeight: '600', color: '#7C3AED', textDecoration: 'none',
               transition: 'all 0.2s', background: 'white',
             }}>
-              🏪 Want to sell? Become a seller
+              🏪 {t('becomeASeller')}
             </Link>
           </div>
               <Link to="/delivery/login" className="nav-link" style={{
@@ -241,7 +243,7 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
                 fontSize: '13px', fontWeight: '600', color: '#f97316', textDecoration: 'none',
                 transition: 'all 0.2s', background: 'white',
               }}>
-                🛵 Delivery Partner? Login here
+                🛵 {t('deliveryPartnerLogin')}
               </Link>
 
 
@@ -257,7 +259,7 @@ toast.success(`Welcome back, ${data.user.name}! 👋`)
               onMouseEnter={e => { e.currentTarget.style.color = '#E91E8C'; e.currentTarget.style.background = '#FDF0F8'; }}
               onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'none'; }}
             >
-              ← Back to Home
+              ← {t('backToHome')}
             </button>
           </div>
 

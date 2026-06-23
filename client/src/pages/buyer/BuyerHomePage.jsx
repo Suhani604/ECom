@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../context/useAuthStore.js'
 import api from '../../api/axiosInstance.js'
 import useCartStore from '../../context/useCartStore.js'
 import useWishlistStore from '../../context/useWishlistStore.js'
+// Top pe import add karo
+import LanguageToggle from '../../components/common/LanguageToggle.jsx'
 
 const f = 'Poppins, sans-serif'
 
@@ -17,6 +20,7 @@ function useIsMobile() {
   }, [])
   return isMobile
 }
+
 
 const MEGA_MENU_DATA = {
   men: [
@@ -431,6 +435,7 @@ export default function BuyerHomePage() {
   const { items }        = useCartStore()
   const { toggleItem, isWishlisted, items: wishlistItems } = useWishlistStore()
   const isMobile = useIsMobile()
+  const { t } = useTranslation()
 
   const [products,         setProducts]         = useState([])
   const [loading,          setLoading]          = useState(true)
@@ -590,115 +595,120 @@ export default function BuyerHomePage() {
   return (
     <div style={{ minHeight: '100vh', background: '#F7F7F9', fontFamily: f }}>
 
-      {/* ── DESKTOP NAVBAR ── */}
-      {!isMobile && (
-        <div style={{ position: 'sticky', top: 0, zIndex: 200 }}>
-          <nav onMouseLeave={handleNavAreaLeave}
-            style={{ background: 'white', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, cursor: 'pointer' }} onClick={() => navigate('/home')}>
-              <Logo size={38} />
-              <div>
-                <p style={{ fontWeight: '900', fontSize: '16px', margin: 0, lineHeight: 1, background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>StyleHub</p>
-                <p style={{ fontSize: '8px', color: '#94A3B8', margin: 0, letterSpacing: '2.5px', textTransform: 'uppercase', fontWeight: '600' }}>Fashion Store</p>
+     {/* ── DESKTOP NAVBAR ── */}
+{!isMobile && (
+  <div style={{ position: 'sticky', top: 0, zIndex: 200 }}>
+    <nav onMouseLeave={handleNavAreaLeave}
+      style={{ background: 'white', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, cursor: 'pointer' }} onClick={() => navigate('/home')}>
+        <Logo size={38} />
+        <div>
+          <p style={{ fontWeight: '900', fontSize: '16px', margin: 0, lineHeight: 1, background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>StyleHub</p>
+          <p style={{ fontSize: '8px', color: '#94A3B8', margin: 0, letterSpacing: '2.5px', textTransform: 'uppercase', fontWeight: '600' }}>Fashion Store</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '0', alignItems: 'center', height: '64px' }}>
+        {CATS.map(c => (
+          <div key={c.key} onMouseEnter={() => handleCatEnter(c.key)} style={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+            <button onClick={() => { setCategory(c.key); setActiveMenu(null) }}
+              style={{ padding: '0 14px', background: 'none', border: 'none', borderBottom: category === c.key ? '3px solid #E91E8C' : activeMenu === c.key ? '3px solid #E91E8C' : '3px solid transparent', cursor: 'pointer', fontSize: '12px', fontFamily: f, fontWeight: '700', color: category === c.key || activeMenu === c.key ? '#E91E8C' : '#282C3F', textTransform: 'uppercase', letterSpacing: '0.5px', height: '100%', borderRadius: 0, transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '13px' }}>{c.icon}</span>
+              {c.label}
+              {megaMenuData[c.key] && <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ opacity: 0.5 }}><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+            </button>
+          </div>
+        ))}
+      </div>
+      <div ref={searchWrapRef} style={{ flex: 1, maxWidth: '310px', margin: '0 20px', position: 'relative' }}>
+        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#94A3B8', pointerEvents: 'none' }}>🔍</span>
+        <input value={search} onChange={e => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onKeyDown={handleSearchKeyDown}
+          placeholder={t('search')}
+          style={{ width: '100%', padding: '10px 16px 10px 38px', border: '1px solid', borderColor: searchFocused ? '#E91E8C' : '#D4D5D9', borderRadius: '4px', fontSize: '12px', outline: 'none', background: searchFocused ? 'white' : '#F5F5F6', fontFamily: f, boxSizing: 'border-box', color: '#282C3F', transition: 'border 0.2s,background 0.2s' }} />
+        {searchFocused && (
+          <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', borderRadius: '8px', border: '1px solid #E5E7EB', zIndex: 300, padding: '16px 16px 18px', fontFamily: f }}>
+            {recentSearches.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '700', color: '#1A1A2E', margin: 0 }}>Recent Searches</p>
+                  <button onMouseDown={e => { e.preventDefault(); setRecentSearches([]); localStorage.removeItem('sh_recent') }} style={{ fontSize: '11px', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f }}>Clear</button>
+                </div>
+                {recentSearches.slice(0, 5).map(term => (
+                  <div key={term} onMouseDown={e => { e.preventDefault(); handleSearchSelect(term) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 6px', cursor: 'pointer', borderRadius: '4px' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span style={{ fontSize: '13px', color: '#374151' }}>{term}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div>
+              <p style={{ fontSize: '13px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 10px' }}>Popular Searches</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {POPULAR_SEARCHES.map(term => (
+                  <button key={term} onMouseDown={e => { e.preventDefault(); handleSearchSelect(term) }}
+                    style={{ fontSize: '12px', fontWeight: '500', padding: '6px 14px', background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB', borderRadius: '20px', cursor: 'pointer', fontFamily: f }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FCE7F3'; e.currentTarget.style.borderColor = '#E91E8C'; e.currentTarget.style.color = '#E91E8C' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151' }}>
+                    {term}
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0', alignItems: 'center', height: '64px' }}>
-              {CATS.map(c => (
-                <div key={c.key} onMouseEnter={() => handleCatEnter(c.key)} style={{ height: '100%', display: 'flex', alignItems: 'center' }}>
-                  <button onClick={() => { setCategory(c.key); setActiveMenu(null) }}
-                    style={{ padding: '0 14px', background: 'none', border: 'none', borderBottom: category === c.key ? '3px solid #E91E8C' : activeMenu === c.key ? '3px solid #E91E8C' : '3px solid transparent', cursor: 'pointer', fontSize: '12px', fontFamily: f, fontWeight: '700', color: category === c.key || activeMenu === c.key ? '#E91E8C' : '#282C3F', textTransform: 'uppercase', letterSpacing: '0.5px', height: '100%', borderRadius: 0, transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '13px' }}>{c.icon}</span>
-                    {c.label}
-                    {megaMenuData[c.key] && <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ opacity: 0.5 }}><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div ref={searchWrapRef} style={{ flex: 1, maxWidth: '310px', margin: '0 20px', position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#94A3B8', pointerEvents: 'none' }}>🔍</span>
-              <input value={search} onChange={e => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onKeyDown={handleSearchKeyDown}
-                placeholder="Try Saree, Kurti or Search by Product"
-                style={{ width: '100%', padding: '10px 16px 10px 38px', border: '1px solid', borderColor: searchFocused ? '#E91E8C' : '#D4D5D9', borderRadius: '4px', fontSize: '12px', outline: 'none', background: searchFocused ? 'white' : '#F5F5F6', fontFamily: f, boxSizing: 'border-box', color: '#282C3F', transition: 'border 0.2s,background 0.2s' }} />
-              {searchFocused && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', borderRadius: '8px', border: '1px solid #E5E7EB', zIndex: 300, padding: '16px 16px 18px', fontFamily: f }}>
-                  {recentSearches.length > 0 && (
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <p style={{ fontSize: '13px', fontWeight: '700', color: '#1A1A2E', margin: 0 }}>Recent Searches</p>
-                        <button onMouseDown={e => { e.preventDefault(); setRecentSearches([]); localStorage.removeItem('sh_recent') }} style={{ fontSize: '11px', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f }}>Clear</button>
-                      </div>
-                      {recentSearches.slice(0, 5).map(term => (
-                        <div key={term} onMouseDown={e => { e.preventDefault(); handleSearchSelect(term) }}
-                          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 6px', cursor: 'pointer', borderRadius: '4px' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                          <span style={{ fontSize: '13px', color: '#374151' }}>{term}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 10px' }}>Popular Searches</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {POPULAR_SEARCHES.map(term => (
-                        <button key={term} onMouseDown={e => { e.preventDefault(); handleSearchSelect(term) }}
-                          style={{ fontSize: '12px', fontWeight: '500', padding: '6px 14px', background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB', borderRadius: '20px', cursor: 'pointer', fontFamily: f }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#FCE7F3'; e.currentTarget.style.borderColor = '#E91E8C'; e.currentTarget.style.color = '#E91E8C' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#374151' }}>
-                          {term}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexShrink: 0 }}>
-              {user ? (
-                <>
-                  {[
-                    { label: 'Orders',   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>, path: '/orders', badge: null },
-                    { label: 'Wishlist', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>, path: '/wishlist', badge: wishlistCount },
-                    { label: 'Bag',      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>, path: '/cart', badge: cartCount },
-                    { label: 'Profile',  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, path: '/profile', badge: null },
-                  ].map(nav => (
-                    <button key={nav.label} onClick={() => navigate(nav.path)} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, padding: 0 }}>
-                      {nav.icon}
-                      {nav.badge > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-6px', background: '#E91E8C', color: 'white', width: '16px', height: '16px', borderRadius: '50%', fontSize: '9px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{nav.badge}</span>}
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#282C3F' }}>{nav.label}</span>
-                    </button>
-                  ))}
-                  <button onClick={() => { logout(); navigate('/') }} style={{ fontSize: '11px', fontWeight: '700', color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, letterSpacing: '0.3px', textTransform: 'uppercase', padding: 0 }}>Logout</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => navigate('/login')} style={{ fontSize: '13px', padding: '8px 20px', background: 'white', color: '#E91E8C', border: '2px solid #E91E8C', borderRadius: '4px', cursor: 'pointer', fontFamily: f, fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Login</button>
-                  <button onClick={() => navigate('/signup/buyer')} style={{ fontSize: '13px', padding: '8px 20px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontFamily: f, fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Sign Up</button>
-                </>
-              )}
-            </div>
-          </nav>
-          {activeMegaCols && (
-            <div onMouseEnter={handleMegaEnter} onMouseLeave={handleMegaLeave}
-              style={{ position: 'absolute', top: '64px', left: 0, right: 0, background: 'white', borderTop: '3px solid #E91E8C', boxShadow: '0 12px 40px rgba(0,0,0,0.14)', padding: '24px 40px 28px', display: 'grid', gridTemplateColumns: `repeat(${activeMegaCols.length}, 1fr)`, gap: '0 20px', zIndex: 190, animation: 'megaFadeIn 0.18s ease' }}>
-              {activeMegaCols.map(col => (
-                <div key={col.heading}>
-                  <p style={{ fontSize: '11px', fontWeight: '800', color: '#E91E8C', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px', fontFamily: f }}>{col.heading}</p>
-                  {col.items.map(item => (
-                    <p key={item} onClick={() => handleMegaItemClick(item, activeMenu)}
-                      style={{ fontSize: '12.5px', color: '#374151', margin: '0 0 8px', cursor: 'pointer', fontFamily: f, transition: 'color 0.12s', lineHeight: '1.4' }}
-                      onMouseEnter={e => e.target.style.color = '#E91E8C'}
-                      onMouseLeave={e => e.target.style.color = '#374151'}>
-                      {item}
-                    </p>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Right side: icons + language toggle ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexShrink: 0 }}>
+        {user ? (
+          <>
+            {[
+              { label: t('myOrders'), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>, path: '/orders', badge: null },
+              { label: t('wishlist'), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>, path: '/wishlist', badge: wishlistCount },
+              { label: t('cart'),     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>, path: '/cart', badge: cartCount },
+              { label: t('profile'), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, path: '/profile', badge: null },
+            ].map(nav => (
+              <button key={nav.label} onClick={() => navigate(nav.path)} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, padding: 0 }}>
+                {nav.icon}
+                {nav.badge > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-6px', background: '#E91E8C', color: 'white', width: '16px', height: '16px', borderRadius: '50%', fontSize: '9px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{nav.badge}</span>}
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#282C3F' }}>{nav.label}</span>
+              </button>
+            ))}
+            <button onClick={() => { logout(); navigate('/') }} style={{ fontSize: '11px', fontWeight: '700', color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, letterSpacing: '0.3px', textTransform: 'uppercase', padding: 0 }}>{t('logout')}</button>
+            <LanguageToggle />  {/* ✅ logged-in user ke liye */}
+          </>
+        ) : (
+          <>
+            <button onClick={() => navigate('/login')} style={{ fontSize: '13px', padding: '8px 20px', background: 'white', color: '#E91E8C', border: '2px solid #E91E8C', borderRadius: '4px', cursor: 'pointer', fontFamily: f, fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Login</button>
+            <button onClick={() => navigate('/signup/buyer')} style={{ fontSize: '13px', padding: '8px 20px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontFamily: f, fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('signup')}</button>
+            <LanguageToggle />  {/* ✅ guest user ke liye */}
+          </>
+        )}
+      </div>
+    </nav>
+
+    {activeMegaCols && (
+      <div onMouseEnter={handleMegaEnter} onMouseLeave={handleMegaLeave}
+        style={{ position: 'absolute', top: '64px', left: 0, right: 0, background: 'white', borderTop: '3px solid #E91E8C', boxShadow: '0 12px 40px rgba(0,0,0,0.14)', padding: '24px 40px 28px', display: 'grid', gridTemplateColumns: `repeat(${activeMegaCols.length}, 1fr)`, gap: '0 20px', zIndex: 190, animation: 'megaFadeIn 0.18s ease' }}>
+        {activeMegaCols.map(col => (
+          <div key={col.heading}>
+            <p style={{ fontSize: '11px', fontWeight: '800', color: '#E91E8C', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 10px', fontFamily: f }}>{col.heading}</p>
+            {col.items.map(item => (
+              <p key={item} onClick={() => handleMegaItemClick(item, activeMenu)}
+                style={{ fontSize: '12.5px', color: '#374151', margin: '0 0 8px', cursor: 'pointer', fontFamily: f, transition: 'color 0.12s', lineHeight: '1.4' }}
+                onMouseEnter={e => e.target.style.color = '#E91E8C'}
+                onMouseLeave={e => e.target.style.color = '#374151'}>
+                {item}
+              </p>
+            ))}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
       {/* ── MOBILE NAVBAR ── */}
       {isMobile && (
@@ -712,7 +722,7 @@ export default function BuyerHomePage() {
             <div ref={searchWrapRef} style={{ flex: 1, position: 'relative' }}>
               <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94A3B8', pointerEvents: 'none' }}>🔍</span>
               <input value={search} onChange={e => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onKeyDown={handleSearchKeyDown}
-                placeholder="Search products..."
+                placeholder={t('search')}
                 style={{ width: '100%', padding: '9px 10px 9px 32px', border: '1px solid', borderColor: searchFocused ? '#E91E8C' : '#D4D5D9', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#F5F5F6', fontFamily: f, boxSizing: 'border-box', color: '#282C3F' }} />
               {searchFocused && (
                 <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', borderRadius: '8px', border: '1px solid #E5E7EB', zIndex: 300, padding: '14px', fontFamily: f }}>
@@ -753,10 +763,10 @@ export default function BuyerHomePage() {
       {isMobile && user && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'white', borderTop: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-around', height: '60px', boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
           {[
-            { label: 'Home',    path: '/home',    icon: '🏠' },
-            { label: 'Wishlist', path: '/wishlist', icon: '❤️', badge: wishlistCount },
-            { label: 'Orders',  path: '/orders',  icon: '📦' },
-            { label: 'Profile', path: '/profile', icon: '👤' },
+            { label: t('home'),    path: '/home',    icon: '🏠' },
+            { label: t('wishlist'), path: '/wishlist', icon: '❤️', badge: wishlistCount },
+            { label: t('myOrders'),  path: '/orders',  icon: '📦' },
+            { label: t('profile'), path: '/profile', icon: '👤' },
           ].map(nav => (
             <button key={nav.label} onClick={() => navigate(nav.path)}
               style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, padding: '6px 10px' }}>
@@ -819,7 +829,7 @@ export default function BuyerHomePage() {
         {/* Brands Marquee */}
         <div style={{ background: 'white', padding: isMobile ? '16px 0' : '30px 0', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
           <div style={{ padding: '0 14px' }}>
-            <h2 style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '1px' }}>⭐ Favourite Brands</h2>
+            <h2 style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '1px' }}>⭐ {t('favouriteBrands')}</h2>
           </div>
           <Marquee brands={currentBrands} selectedBrands={selectedBrands} toggleBrand={toggleBrand} speed={35} isMobile={isMobile} />
         </div>
@@ -829,7 +839,7 @@ export default function BuyerHomePage() {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button onClick={() => setMobileFilterOpen(true)}
               style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', fontWeight: '700', color: '#374151', cursor: 'pointer', fontFamily: f, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              🔧 Filters {hasActiveFilters ? `(${(selectedSubs.length + selectedBrands.length + selectedColors.length + (selectedDiscount ? 1 : 0))})` : ''}
+              🔧 {t('filters')} {hasActiveFilters ? `(${(selectedSubs.length + selectedBrands.length + selectedColors.length + (selectedDiscount ? 1 : 0))})` : ''}
             </button>
             <button onClick={clearFilters} disabled={!hasActiveFilters}
               style={{ padding: '10px 14px', background: hasActiveFilters ? '#FCE7F3' : '#F3F4F6', border: `1px solid ${hasActiveFilters ? '#F9A8D4' : '#E5E7EB'}`, borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: hasActiveFilters ? '#E91E8C' : '#9CA3AF', cursor: hasActiveFilters ? 'pointer' : 'not-allowed', fontFamily: f }}>
@@ -883,7 +893,7 @@ export default function BuyerHomePage() {
             ) : filteredProducts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94A3B8' }}>
                 <div style={{ fontSize: '48px', marginBottom: '14px' }}>{category === 'jewellery' ? '💎' : '🔍'}</div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 8px' }}>No products found</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1A1A2E', margin: '0 0 8px' }}>{t('noProductsFound')}</h3>
                 <p style={{ fontSize: '13px', margin: '0 0 14px' }}>{hasActiveFilters ? 'Try adjusting your filters' : 'Check back soon!'}</p>
                 {hasActiveFilters && (
                   <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', border: 'none', borderRadius: '50px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: f }}>Clear Filters</button>

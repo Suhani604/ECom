@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema({
   isVerified:   { type: Boolean, default: false },
   addresses:    [addressSchema],
   sellerDetails:{ type: sellerDetailsSchema, default: () => ({}) },
+  referralCode:  { type: String, unique: true, sparse: true },
+  referredBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  referralCount: { type: Number, default: 0 },
+  walletBalance: { type: Number, default: 0 },
   otp:          { type: String },
   otpExpiry:    { type: Date },
 }, { timestamps: true })

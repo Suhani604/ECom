@@ -21,6 +21,7 @@ import categoryRoutes    from './routes/categoryRoutes.js'   // 🆕
 import reviewRoutes from './routes/reviewRoutes.js'
 import bannerRoutes from './routes/bannerRoutes.js'
 import deliveryRoutes from './routes/deliveryRoutes.js'
+import couponRoutes from './routes/couponRoutes.js'
 
 
 const app    = express()
@@ -66,6 +67,7 @@ app.use('/api/reviews', reviewRoutes)
 app.use('/api/banners', bannerRoutes)
 app.use('/api/categories', categoryRoutes)   // ✅ was: /api
 app.use('/api/delivery', deliveryRoutes)
+app.use('/api/coupons', couponRoutes)
 
 app.use((req, res) => res.status(404).json({ success: false, message: `Route ${req.method} ${req.url} not found` }))
 app.use(errorHandler)

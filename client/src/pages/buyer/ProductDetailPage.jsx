@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../api/axiosInstance.js'
@@ -15,7 +16,8 @@ function DeliveryOptions() {
   const [result,   setResult]   = useState(null)
   const [error,    setError]    = useState('')
   const [geoLoading,  setGeoLoading]  = useState(false)
-const [geoDetected, setGeoDetected] = useState(null)
+  const [geoDetected, setGeoDetected] = useState(null)
+  const { t } = useTranslation()
 
   const PINCODE_DB = {
     110: { state: 'Delhi',             district: 'New Delhi' },
@@ -240,7 +242,7 @@ const [geoDetected, setGeoDetected] = useState(null)
     <div style={{ marginBottom: '20px', border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: '8px', background: '#FAFAFA' }}>
         <span>🚚</span>
-        <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Delivery Options</span>
+        <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('deliveryOptions')}</span>
       </div>
       <div style={{ padding: '14px 16px', borderBottom: result || error ? '1px solid #F1F5F9' : 'none' }}>
        {/* Detect Location Button */}
@@ -293,7 +295,7 @@ const [geoDetected, setGeoDetected] = useState(null)
               value={pincode}
               onChange={e => { setPincode(e.target.value.replace(/\D/g, '').slice(0, 6)); setResult(null); setError('') }}
               onKeyDown={handleKey}
-              placeholder="Enter 6-digit pincode"
+              placeholder={t('enterPincode')}
               maxLength={6}
               style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', fontWeight: '600', color: '#0F172A', padding: '10px 0', background: 'transparent', fontFamily: f }}
             />
@@ -304,7 +306,7 @@ const [geoDetected, setGeoDetected] = useState(null)
             style={{ padding: '10px 20px', background: pincode.length === 6 && !checking ? '#ec4899' : '#E2E8F0', color: pincode.length === 6 && !checking ? 'white' : '#94A3B8', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '13px', cursor: pincode.length === 6 ? 'pointer' : 'not-allowed', fontFamily: f, whiteSpace: 'nowrap', minWidth: '72px', transition: 'all 0.2s' }}>
             {checking
               ? <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-              : 'Check'}
+              : t('Check')}
           </button>
         </div>
         {error && <p style={{ fontSize: '11px', color: '#ef4444', margin: '6px 0 0', fontWeight: '600' }}>{error}</p>}
@@ -406,6 +408,7 @@ function QuickReviewModal({ productId, productTitle, onClose, onSubmitted }) {
   const [title,   setTitle]   = useState('')
   const [hover,   setHover]   = useState(0)
   const [loading, setLoading] = useState(false)
+  const { t } = useTranslation()
 
   const LABELS = ['', 'Very Bad', 'Bad', 'Ok-Ok', 'Good', 'Very Good']
 
@@ -433,7 +436,7 @@ function QuickReviewModal({ productId, productTitle, onClose, onSubmitted }) {
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
           <div>
-            <h3 style={{ fontSize:'16px', fontWeight:'800', color:'#0F172A', margin:0 }}>Write a Review</h3>
+            <h3 style={{ fontSize:'16px', fontWeight:'800', color:'#0F172A', margin:0 }}>{t('writeReview')}</h3>
             <p style={{ fontSize:'12px', color:'#94A3B8', margin:'3px 0 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'280px' }}>{productTitle}</p>
           </div>
           <button onClick={onClose} style={{ background:'#F1F5F9', border:'none', width:'32px', height:'32px', borderRadius:'50%', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center', color:'#64748B' }}>×</button>
@@ -470,11 +473,11 @@ function QuickReviewModal({ productId, productTitle, onClose, onSubmitted }) {
         <div style={{ display:'flex', gap:'10px' }}>
           <button onClick={onClose}
             style={{ flex:1, padding:'12px', background:'white', color:'#64748B', border:'1.5px solid #E2E8F0', borderRadius:'8px', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:f }}>
-            Cancel
+           {t('cancel')}
           </button>
           <button onClick={handleSubmit} disabled={loading || !rating}
             style={{ flex:2, padding:'12px', background: rating && !loading ? 'linear-gradient(135deg,#ec4899,#f97316)' : '#F1F5F9', color: rating && !loading ? 'white' : '#94A3B8', border:'none', borderRadius:'8px', fontSize:'13px', fontWeight:'700', cursor: rating && !loading ? 'pointer' : 'not-allowed', fontFamily:f }}>
-            {loading ? 'Submitting...' : 'Submit Review ✓'}
+            {loading ? t('submitting') : t('submitReview')}
           </button>
         </div>
       </div>
@@ -494,6 +497,7 @@ function ReviewsSection({ productId, productTitle }) {
   const [breakdown,    setBreakdown]    = useState({})
   const [error,        setError]        = useState(null)
   const [showModal,    setShowModal]    = useState(false)
+  const { t } = useTranslation()
   const LIMIT = 5
 
   const fetchReviews = () => {
@@ -554,7 +558,7 @@ function ReviewsSection({ productId, productTitle }) {
               }}
               onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 4px 16px rgba(236,72,153,0.45)'}}
               onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='0 2px 10px rgba(236,72,153,0.35)'}}>
-              ✍️ Write Review
+              ✍️ {t('writeReview')}
             </button>
           </div>
         </div>
@@ -572,11 +576,11 @@ function ReviewsSection({ productId, productTitle }) {
           ) : total === 0 ? (
             <div style={{padding:'36px 20px',textAlign:'center',background:'white'}}>
               <div style={{fontSize:'40px',marginBottom:'10px'}}>⭐</div>
-              <p style={{fontSize:'14px',fontWeight:'700',color:'#0F172A',margin:'0 0 4px'}}>No reviews yet</p>
+              <p style={{fontSize:'14px',fontWeight:'700',color:'#0F172A',margin:'0 0 4px'}}>{t('noReviewsYet')}</p>
               <p style={{fontSize:'13px',color:'#94A3B8',margin:'0 0 16px'}}>Be the first to share your experience!</p>
               <button onClick={handleWriteReview}
                 style={{padding:'10px 24px',background:'linear-gradient(135deg,#ec4899,#f97316)',color:'white',border:'none',borderRadius:'20px',fontSize:'13px',fontWeight:'700',cursor:'pointer',fontFamily:f,boxShadow:'0 4px 14px rgba(236,72,153,0.3)'}}>
-                ✍️ Write the First Review
+                ✍️ {t('writeFirstReview')}
               </button>
             </div>
           ) : (
@@ -672,6 +676,7 @@ export default function ProductDetailPage() {
   const [mousePos, setMousePos] = useState({x:50,y:50})
   // ✅ NEW: size validation shake animation state
   const [sizeError, setSizeError] = useState(false)
+  const { t } = useTranslation()
 
   useEffect(()=>{
     api.get(`/products/${id}`)
@@ -768,7 +773,7 @@ export default function ProductDetailPage() {
       {/* Header */}
       <div style={{background:'white',padding:'0 20px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:30,boxShadow:'0 1px 3px rgba(0,0,0,0.08)',}}>
         <button onClick={()=>navigate(-1)} style={{background:'#F1F5F9',border:'none',width:'36px',height:'36px',borderRadius:'50%',cursor:'pointer',fontSize:'18px',display:'flex',alignItems:'center',justifyContent:'center'}}>←</button>
-        <span style={{fontWeight:'700',fontSize:'15px',color:'#0F172A'}}>Product Details</span>
+        <span style={{fontWeight:'700',fontSize:'15px',color:'#0F172A'}}>{t('productDetails')}</span>
         <button onClick={()=>navigate('/cart')} style={{position:'relative',background:'none',border:'none',cursor:'pointer',padding:'6px'}}>
           <span style={{fontSize:'22px'}}>🛒</span>
           {items.length>0&&<span style={{position:'absolute',top:0,right:0,width:'16px',height:'16px',background:'#ec4899',color:'white',fontSize:'9px',fontWeight:'800',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>{items.reduce((s,i)=>s+i.quantity,0)}</span>}
@@ -854,7 +859,7 @@ export default function ProductDetailPage() {
             <div style={{marginBottom:'20px'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
                 <span style={{fontSize:'13px',fontWeight:'700',color: sizeError ? '#ef4444' : '#0F172A',textTransform:'uppercase',letterSpacing:'0.06em',transition:'color 0.2s'}}>
-                  {sizeError ? '⚠️ Please Select a Size' : 'Select Size'}
+                  {sizeError ? `⚠️ ${t('pleaseSelectSize')}` : t('selectSize')}
                 </span>
                 {selVariant&&<span style={{fontSize:'12px',color:selVariant.stock<5?'#DC2626':'#16A34A',fontWeight:'600'}}>{selVariant.stock} in stock</span>}
               </div>
@@ -870,7 +875,7 @@ export default function ProductDetailPage() {
           {/* Colors */}
           {colors.length>0&&(
             <div style={{marginBottom:'20px'}}>
-              <span style={{fontSize:'13px',fontWeight:'700',color:'#0F172A',display:'block',marginBottom:'12px',textTransform:'uppercase',letterSpacing:'0.06em'}}>Color</span>
+              <span style={{fontSize:'13px',fontWeight:'700',color:'#0F172A',display:'block',marginBottom:'12px',textTransform:'uppercase',letterSpacing:'0.06em'}}>{t('color')}</span>
               <div style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
                 {colors.map(color=><button key={color} className="size-btn" onClick={()=>setSelColor(color)}
                   style={{padding:'8px 18px',borderRadius:'6px',border:`2px solid ${selColor===color?'#ec4899':'#E2E8F0'}`,background:selColor===color?'#FFF0F9':'white',color:selColor===color?'#ec4899':'#374151',fontWeight:'700',fontSize:'13px',cursor:'pointer',fontFamily:f}}>{color}</button>)}
@@ -880,7 +885,7 @@ export default function ProductDetailPage() {
 
           {/* Quantity */}
           <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'24px'}}>
-            <span style={{fontSize:'13px',fontWeight:'700',color:'#0F172A',textTransform:'uppercase',letterSpacing:'0.06em'}}>Quantity</span>
+            <span style={{fontSize:'13px',fontWeight:'700',color:'#0F172A',textTransform:'uppercase',letterSpacing:'0.06em'}}>{t('quantity')}</span>
             <div style={{display:'flex',alignItems:'center',border:'1.5px solid #E2E8F0',borderRadius:'8px',overflow:'hidden'}}>
               <button onClick={()=>setQty(q=>Math.max(1,q-1))} style={{width:'38px',height:'38px',background:'#F8FAFC',border:'none',cursor:'pointer',fontSize:'18px',fontWeight:'700',display:'flex',alignItems:'center',justifyContent:'center',color:'#374151'}}>−</button>
               <span style={{width:'40px',textAlign:'center',fontWeight:'800',fontSize:'14px',color:'#0F172A',borderLeft:'1px solid #E2E8F0',borderRight:'1px solid #E2E8F0',height:'38px',lineHeight:'38px'}}>{qty}</span>
@@ -892,11 +897,11 @@ export default function ProductDetailPage() {
           <div style={{display:'flex',gap:'12px',marginBottom:'28px'}}>
             <button onClick={handleAddToCart} disabled={!hasStock} className="action-btn"
               style={{flex:1,height:'48px',background:'white',color:hasStock?'#ec4899':'#94A3B8',border:`2px solid ${hasStock?'#ec4899':'#E2E8F0'}`,borderRadius:'8px',cursor:hasStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
-              🛍️ {inCart?'Added to Bag':'Add to Bag'}
+              🛍️ {inCart ? t('addedToBag') : t('addToBag')}
             </button>
             <button onClick={handleBuyNow} disabled={!hasStock} className="action-btn"
               style={{flex:1,height:'48px',background:hasStock?'linear-gradient(135deg,#ec4899,#f97316)':'#E2E8F0',color:hasStock?'white':'#94A3B8',border:'none',borderRadius:'8px',cursor:hasStock?'pointer':'not-allowed',fontWeight:'700',fontSize:'13px',fontFamily:f,boxShadow:hasStock?'0 4px 14px rgba(236,72,153,0.35)':'none',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',letterSpacing:'0.05em',textTransform:'uppercase'}}>
-              🤩 Buy Now
+             🤩 {t('buyNow')}
             </button>
           </div>
 
@@ -924,7 +929,7 @@ export default function ProductDetailPage() {
           {additionalEntries.length>0&&(
             <div style={{marginBottom:'16px',borderRadius:'10px',border:'1px solid #F1F5F9',overflow:'hidden'}}>
               <div style={{padding:'12px 16px',background:'#FAFAFA',borderBottom:'1px solid #F1F5F9'}}>
-                <h3 style={{fontSize:'12px',fontWeight:'800',color:'#0F172A',margin:0,textTransform:'uppercase',letterSpacing:'0.06em'}}>Product Details</h3>
+                <h3 style={{fontSize:'12px',fontWeight:'800',color:'#0F172A',margin:0,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t('productDetails')}</h3>
               </div>
               {additionalEntries.map(([key,value],i)=>(
                 <div key={key} style={{display:'flex',alignItems:'center',padding:'11px 16px',background:i%2===0?'white':'#FAFAFA',borderBottom:i<additionalEntries.length-1?'1px solid #F1F5F9':'none'}}>
@@ -938,7 +943,7 @@ export default function ProductDetailPage() {
           {/* Seller */}
           {product.seller&&(
             <div style={{padding:'14px 16px',background:'#F8FAFC',borderRadius:'10px',border:'1px solid #F1F5F9'}}>
-              <p style={{fontSize:'11px',color:'#94A3B8',margin:'0 0 4px',textTransform:'uppercase',letterSpacing:'0.06em'}}>Sold by</p>
+              <p style={{fontSize:'11px',color:'#94A3B8',margin:'0 0 4px',textTransform:'uppercase',letterSpacing:'0.06em'}}>{t('soldBy')}</p>
               <p style={{fontSize:'14px',fontWeight:'700',color:'#0F172A',margin:0}}>{product.seller?.sellerDetails?.businessName||product.seller?.name}</p>
             </div>
           )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { io } from 'socket.io-client'
@@ -29,12 +30,13 @@ const STEP_LABELS = {
   delivered:        'Delivered',
 }
 
+// ✅ AISA KARO
 const TABS = [
-  { key: '',          label: 'All' },
-  { key: 'placed',    label: 'Placed' },
-  { key: 'shipped',   label: 'Shipped' },
-  { key: 'delivered', label: 'Delivered' },
-  { key: 'cancelled', label: 'Cancelled' },
+  { key: '',          labelKey: 'all' },
+  { key: 'placed',    labelKey: 'placed' },
+  { key: 'shipped',   labelKey: 'shipped' },
+  { key: 'delivered', labelKey: 'delivered' },
+  { key: 'cancelled', labelKey: 'cancelled' },
 ]
 
 /* ── Tracking Pipeline ─────────────────────────────────────────────────────── */
@@ -152,9 +154,10 @@ function OrderInfoPanel({ order }) {
 /* ── Star rating row ───────────────────────────────────────────────────────── */
 function StarRow({ orderId, productId, navigate }) {
   const [hovered, setHovered] = useState(0)
+  const { t } = useTranslation()
   return (
     <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9' }}>
-      <p style={{ fontSize: '13px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 8px' }}>How was the product?</p>
+      <p style={{ fontSize: '13px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 8px' }}>{t('howWasProduct')}</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: '6px' }}>
           {['Very Bad', 'Bad', 'Ok-Ok', 'Good', 'Very Good'].map((label, i) => (
@@ -171,7 +174,7 @@ function StarRow({ orderId, productId, navigate }) {
         </div>
         <button onClick={() => navigate(`/review/${orderId}/${productId}`)}
           style={{ padding: '8px 16px', background: 'white', color: '#7C3AED', border: '1.5px solid #7C3AED', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', fontFamily: f }}>
-          Rate &amp; Review
+          {t('rateAndReview')}
         </button>
       </div>
     </div>
@@ -188,6 +191,7 @@ export default function MyOrdersPage() {
   const [total,       setTotal]       = useState(0)
   const [search,      setSearch]      = useState('')
   const [expandedId,  setExpandedId]  = useState(null)
+  const { t } = useTranslation()
   const LIMIT = 10
 
   const fetchOrders = useCallback(async () => {
@@ -263,7 +267,7 @@ export default function MyOrdersPage() {
       <div style={{ background: 'white', padding: '0 16px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F1F5F9', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => navigate('/home')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', padding: '4px' }}>←</button>
-          <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>My Orders</h1>
+          <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('myOrders')}</h1>
         </div>
         <button onClick={fetchOrders} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#7C3AED' }}>↻</button>
       </div>
@@ -272,7 +276,7 @@ export default function MyOrdersPage() {
       <div style={{ padding: '12px 16px', background: 'white', borderBottom: '1px solid #F1F5F9' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '16px' }}>🔍</span>
-          <input className="search-box" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders..." />
+          <input className="search-box" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('searchOrders')} />
         </div>
       </div>
 
@@ -281,7 +285,7 @@ export default function MyOrdersPage() {
         {TABS.map(tab => (
           <button key={tab.key} className={`tab-btn${status === tab.key ? ' active' : ''}`}
             onClick={() => { setStatus(tab.key); setPage(1) }}>
-            {tab.label}
+             {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -302,13 +306,13 @@ export default function MyOrdersPage() {
         ) : filteredOrders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
             <div style={{ fontSize: '64px', marginBottom: '16px' }}>📦</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px' }}>No orders found</h3>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px' }}>{t('noOrdersFound')}</h3>
             <p style={{ color: '#64748B', margin: '0 0 24px', fontSize: '14px' }}>
-              {status ? `No ${status} orders yet` : 'Start shopping to see your orders here'}
+              {status ? `${t('no')} ${status} ${t('orderStatusYet')}` : t('startShoppingOrders')}
             </p>
             <button onClick={() => navigate('/home')}
               style={{ padding: '12px 28px', background: '#7C3AED', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', fontFamily: f }}>
-              Start Shopping
+             {t('startShopping')}
             </button>
           </div>
         ) : (
@@ -362,7 +366,7 @@ export default function MyOrdersPage() {
                         <button
                           className={`details-btn${isExpanded ? ' open' : ''}`}
                           onClick={e => { e.stopPropagation(); setExpandedId(isExpanded ? null : order._id) }}>
-                          {isExpanded ? '▲ Hide' : '▼ Details'}
+                          {isExpanded ? `▲ ${t('hide')}` : `▼ ${t('details')}`}
                         </button>
                       )}
                     </div>
@@ -382,7 +386,7 @@ export default function MyOrdersPage() {
                       <button
                         onClick={e => { e.stopPropagation(); handleCancel(order._id) }}
                         style={{ padding: '8px 18px', background: 'white', color: '#BE123C', border: '1.5px solid #BE123C', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', fontFamily: f }}>
-                        Cancel Order
+                       {t('cancelOrder')}
                       </button>
                     </div>
                   )}

@@ -17,6 +17,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const f = 'Poppins, sans-serif'
 

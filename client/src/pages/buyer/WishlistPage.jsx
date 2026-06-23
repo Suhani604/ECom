@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import useWishlistStore from '../../context/useWishlistStore.js'
 import useCartStore from '../../context/useCartStore.js'
 import useAuthStore from '../../context/useAuthStore.js'
@@ -10,6 +11,7 @@ export default function WishlistPage() {
   const { user } = useAuthStore()
   const { items, toggleItem } = useWishlistStore()
   const { addItem } = useCartStore()
+  const { t } = useTranslation()
 
   const handleMoveToBag = (product) => {
   addItem({
@@ -46,15 +48,15 @@ export default function WishlistPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <button onClick={() => navigate('/profile')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, padding: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#282C3F' }}>Profile</span>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#282C3F' }}>{t('profile')}</span>
           </button>
           <button onClick={() => navigate('/wishlist')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, padding: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#E91E8C" stroke="#E91E8C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#E91E8C' }}>Wishlist</span>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#E91E8C' }}>{t('wishlist')}</span>
           </button>
           <button onClick={() => navigate('/cart')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: f, padding: 0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#282C3F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#282C3F' }}>Bag</span>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#282C3F' }}>{t('cart')}</span>
           </button>
         </div>
       </nav>
@@ -65,7 +67,7 @@ export default function WishlistPage() {
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#282C3F', margin: 0 }}>
-            My Wishlist <span style={{ fontWeight: '400', color: '#94A3B8' }}>{items.length} items</span>
+            {t('myWishlist')}<span style={{ fontWeight: '400', color: '#94A3B8' }}>{items.length} {t('items')}</span>
           </h1>
         </div>
 
@@ -73,11 +75,11 @@ export default function WishlistPage() {
         {items.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px', background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <div style={{ fontSize: '72px', marginBottom: '16px' }}>🤍</div>
-            <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#282C3F', margin: '0 0 8px' }}>Your wishlist is empty</h2>
-            <p style={{ fontSize: '14px', color: '#94A3B8', margin: '0 0 24px' }}>Save items you love by clicking the heart icon</p>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#282C3F', margin: '0 0 8px' }}>{t('wishlistEmpty')}</h2>
+            <p style={{ fontSize: '14px', color: '#94A3B8', margin: '0 0 24px' }}>{t('wishlistEmptySubtitle')}</p>
             <button onClick={() => navigate('/home')}
               style={{ padding: '12px 32px', background: 'linear-gradient(135deg,#E91E8C,#7C3AED)', color: 'white', border: 'none', borderRadius: '4px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: f, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-              Continue Shopping
+              {t('continueShopping')}
             </button>
           </div>
         ) : (
@@ -109,7 +111,7 @@ export default function WishlistPage() {
                     {/* Out of stock overlay */}
                     {isOutOfStock && (
                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.9)', padding: '8px', textAlign: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#E91E8C', letterSpacing: '0.5px' }}>OUT OF STOCK</span>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#E91E8C', letterSpacing: '0.5px' }}>{t('outOfStock')}</span>
                       </div>
                     )}
                   </div>
@@ -145,7 +147,7 @@ export default function WishlistPage() {
                       <button
                         onClick={() => navigate(`/product/${product._id}`)}
                         style={{ width: '100%', padding: '10px', background: 'white', color: '#E91E8C', border: '1px solid #E91E8C', borderRadius: '4px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: f, letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        SHOW SIMILAR
+                        {t('showSimilar')}
                       </button>
                     ) : (
                       <button
@@ -153,7 +155,7 @@ export default function WishlistPage() {
                         style={{ width: '100%', padding: '10px', background: 'white', color: '#E91E8C', border: '1px solid #E91E8C', borderRadius: '4px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: f, letterSpacing: '1px', textTransform: 'uppercase', transition: 'all 0.2s' }}
                         onMouseEnter={e => { e.target.style.background = '#E91E8C'; e.target.style.color = 'white' }}
                         onMouseLeave={e => { e.target.style.background = 'white'; e.target.style.color = '#E91E8C' }}>
-                        MOVE TO BAG
+                        {t('moveToBag')}
                       </button>
                     )}
                   </div>

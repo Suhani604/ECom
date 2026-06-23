@@ -3,6 +3,7 @@ import crypto    from 'crypto'
 import Order     from '../models/Order.js'
 import Product   from '../models/Product.js'
 import User      from '../models/User.js'
+import Coupon from '../models/Coupon.js'
 import { sendOutForDeliveryEmail ,sendOrderPlacedEmail} from '../utils/emailHelper.js'
 import { emitOutForDelivery } from '../sockets/socketEmit.js'
 import { sendOutForDeliveryWhatsApp, sendOutForDeliverySMS } from '../utils/whatsappHelper.js'
@@ -93,7 +94,24 @@ const shipping = await calculateShipping({
   sellingPrice: subtotal,
 })
 
-    const discount    = 0
+    let couponDiscount = 0
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true })
+      if (coupon) {
+        if (coupon.discountType === 'percent') {
+          couponDiscount = Math.floor((subtotal * coupon.discountValue) / 100)
+          if (coupon.maxDiscount) couponDiscount = Math.min(couponDiscount, coupon.maxDiscount)
+        } else {
+          couponDiscount = coupon.discountValue
+        }
+        couponDiscount = Math.min(couponDiscount, subtotal)
+        await Coupon.findByIdAndUpdate(coupon._id, {
+          $inc: { usedCount: 1 },
+          $push: { usedBy: req.user._id }
+        })
+      }
+    }
+    const discount    = couponDiscount
     const totalAmount = subtotal + shipping.shippingFee - discount
 
     // ── Create order ───────────────────────────────────────────────────────
