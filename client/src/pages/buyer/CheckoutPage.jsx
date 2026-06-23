@@ -409,6 +409,7 @@ const handleRemoveCoupon = () => {
           state:   selectedAddr.state,
           pincode: selectedAddr.pincode,
         },
+        paymentMethod: payMethod,
         couponCode: appliedCoupon?.code || '',
         discount:   couponDiscount,
       }
